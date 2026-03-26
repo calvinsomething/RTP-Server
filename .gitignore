@@ -1,0 +1,12 @@
+*
+
+# Root
+!*.*
+
+# Source Files
+!src
+!src/*
+
+# Headers
+!include
+!include/*
