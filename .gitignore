@@ -2,11 +2,10 @@
 
 # Root
 !*.*
+compile_commands.json
 
 # Source Files
-!src
-!src/*
+!src/
 
 # Headers
-!include
-!include/*
+!include/
