@@ -11,6 +11,7 @@
 #include <cstring>
 #include <iostream>
 #include <thread>
+#include <unordered_map>
 #include <vector>
 
 #include "Defer.h"
@@ -76,6 +77,43 @@ void start_listener()
     HANDLE_INT_RESULT(listen(listener_socket, SOMAXCONN));
 }
 
+// TODO add gtest and test this
+int get_expected_message_length(int connection, char *b, size_t n)
+{
+    // TODO keep all throwing types/functions in another module with try/catch blocks
+    static std::unordered_map<int, size_t> body_length_by_connection;
+
+    auto body_length = body_length_by_connection.find(connection);
+    if (body_length != body_length_by_connection.end())
+    {
+        return body_length->second;
+    }
+
+    int expected_length = -1;
+
+    // static std::regex re("\r\n\r\n|\r\r|\n\n", std::regex_constants::basic);
+
+    // std::match_results<char *> m;
+
+    // if (std::regex_search(b, b + n, m, re))
+    // {
+    // 	return m[0].first - b;
+    // }
+
+    std::string_view sv(b, n);
+
+    for (auto delimiter : {"\r\n\r\n", "\r\r", "\n\n"})
+    {
+        size_t pos = sv.find(delimiter);
+        if (pos != sv.npos)
+        {
+            return pos;
+        }
+    }
+
+    return expected_length;
+}
+
 void do_work()
 {
     Defer _d1([&]() {
@@ -138,9 +176,7 @@ void do_work()
             n = recv(incoming.data.fd, b, sizeof(b), MSG_PEEK);
             HANDLE_INT_RESULT(n); // TODO need an error handler that doesn't exit
 
-            int expected_length =
-                -1; // try to find delimiter in message -- should also set the expected length of the body here somehow
-                    // maybe have a map with the connection FDs where I'm expecting a body
+            int expected_length = get_expected_message_length(incoming.data.fd, b, n);
 
             if (n == expected_length)
             {
