@@ -6,6 +6,8 @@ compile_commands.json
 
 # Source Files
 !src/
+!src/*/
 
-# Headers
-!include/
+# Tests
+!test/
+!test/*/
