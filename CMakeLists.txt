@@ -13,27 +13,34 @@ set(SOURCE_DIR src)
 add_executable(${CMAKE_PROJECT_NAME})
 
 set(SOURCE_FILES
-	main.cpp
-	Defer.cpp)
+	main.cpp)
 
 foreach(path ${SOURCE_FILES})
 	target_sources(${CMAKE_PROJECT_NAME} PRIVATE "${SOURCE_DIR}/${path}")
 endforeach()
 
 # Libraries
-set(SERVER_LIB Server)
-
-add_library(${SERVER_LIB})
-
 set(SERVER_FILES
 	Server.cpp
-	Connection.cpp)
+	Connection.cpp
+	Exception.cpp
+	RTSPRequest.cpp)
 
-foreach(path ${SERVER_FILES})
-	target_sources(${SERVER_LIB} PRIVATE "${SOURCE_DIR}/${SERVER_LIB}/${path}")
+set(UTIL_FILES
+	Defer.cpp
+	RingBuffer.cpp)
+
+foreach(lib Server;util)
+	add_library(${lib})
+
+	string(TOUPPER ${lib} lib_upper)
+
+	foreach(path ${${lib_upper}_FILES})
+		target_sources(${lib} PRIVATE "${SOURCE_DIR}/${lib}/${path}")
+	endforeach()
+
+	target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${lib})
 endforeach()
-
-target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${SERVER_LIB})
 
 # Tests
 if (BUILD_TESTS)

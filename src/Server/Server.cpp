@@ -6,6 +6,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 
+#include <charconv>
 #include <cstring>
 #include <iostream>
 #include <syncstream>
@@ -13,7 +14,8 @@
 #include <utility>
 #include <vector>
 
-#include "../Defer.h"
+#include "../util/Defer.h"
+#include "Exception.h"
 
 // Public
 void Server::listen_and_serve()
@@ -56,10 +58,6 @@ void Server::start_listener()
 
 void Server::serve()
 {
-    Defer _d1([&]() {
-        std::osyncstream(std::cout) << "Closing thread " << std::this_thread::get_id() << " gracefully." << std::endl;
-    });
-
     int epoll_fd = epoll_create1(0);
     HANDLE_INT_RESULT(epoll_fd);
 
@@ -75,107 +73,110 @@ void Server::serve()
 
     while (1)
     {
-        // wait on exactly 1 event
-        int n = epoll_wait(epoll_fd, &incoming, 1, -1);
-        if (n == -1)
+        try
         {
-            if (errno == EINTR)
+            // wait on exactly 1 event
+            int n = epoll_wait(epoll_fd, &incoming, 1, -1);
+            if (n == -1)
             {
-                size_t interrupt = 1;
-                HANDLE_INT_RESULT(write(interrupt_fd, &interrupt, sizeof(interrupt)));
+                if (errno == EINTR)
+                {
+                    size_t interrupt = 1;
+                    HANDLE_INT_RESULT(write(interrupt_fd, &interrupt, sizeof(interrupt)));
 
-                return;
+                    return;
+                }
+
+                HANDLE_INT_RESULT(n);
             }
 
-            HANDLE_INT_RESULT(n);
-        }
-
-        if (incoming.data.fd == interrupt_fd)
-        {
-            return;
-        }
-        else if (incoming.data.fd == listener_socket)
-        {
-            sockaddr_in6 connection_addr{};
-            socklen_t conn_addr_size = sizeof(connection_addr);
-
-            int connection = accept(listener_socket, reinterpret_cast<sockaddr *>(&connection_addr), &conn_addr_size);
-            HANDLE_INT_RESULT(connection);
-
-            epoll_event event_config{};
-            event_config.events = EPOLLIN | EPOLLONESHOT;
-            event_config.data.fd = connection;
-            HANDLE_INT_RESULT(epoll_ctl(epoll_fd, EPOLL_CTL_ADD, connection, &event_config));
-
-            connections.insert_or_assign(connection, Connection(connection, connection_addr));
-        }
-        else
-        {
-            auto c = connections.find(incoming.data.fd);
-            if (c == connections.end())
+            if (incoming.data.fd == interrupt_fd)
             {
-                std::cout << "Connection not in map (fd = " << incoming.data.fd << ")\n";
                 return;
             }
-
-            char b[4096] = {};
-
-            int n = recv(incoming.data.fd, b, sizeof(b), 0);
-            HANDLE_INT_RESULT(n); // TODO need an error handler that doesn't exit
-
-            c->second.append_to_message(b, n);
-
-            auto header = c->second.get_rtsp_header();
-            if (header.empty())
+            else if (incoming.data.fd == listener_socket)
             {
-                // re-arm FD
+                sockaddr_in6 connection_addr{};
+                socklen_t conn_addr_size = sizeof(connection_addr);
+
+                int connection =
+                    accept(listener_socket, reinterpret_cast<sockaddr *>(&connection_addr), &conn_addr_size);
+                HANDLE_INT_RESULT(connection);
+
                 epoll_event event_config{};
                 event_config.events = EPOLLIN | EPOLLONESHOT;
-                event_config.data.fd = incoming.data.fd;
-                HANDLE_INT_RESULT(epoll_ctl(epoll_fd, EPOLL_CTL_MOD, event_config.data.fd, &event_config));
+                event_config.data.fd = connection;
+                HANDLE_INT_RESULT(epoll_ctl(epoll_fd, EPOLL_CTL_ADD, connection, &event_config));
+
+                connections.insert_or_assign(
+                    connection,
+                    Connection(connection, connection_addr)); // TODO should be an atomic/locking map, also have to deal
+                                                              // with destroying connections when the FD closes
             }
             else
             {
-                HANDLE_INT_RESULT(send(incoming.data.fd, "OK", 2, 0));
+                auto c = connections.find(incoming.data.fd);
+                if (c == connections.end())
+                {
+                    char message[128] = {"Connection not in map (fd = "};
+                    size_t n = std::strlen(message);
 
-                c->second.clear_message();
+                    auto res = std::to_chars(message + n, message + n + 10, incoming.data.fd);
+                    if (res.ptr)
+                    {
+                        throw Exception(res.ptr);
+                    }
+                    else
+                    {
+                        message[n + std::strlen(message + n)] = ')';
+                        throw Exception(message);
+                    }
+                }
+
+                char b[4096] = {};
+
+                int n = recv(incoming.data.fd, b, sizeof(b), 0);
+                HANDLE_INT_RESULT(n); // TODO use an exception instead of this handler that exits
+
+                if (!n)
+                {
+                    // connection was closed
+                    HANDLE_INT_RESULT(epoll_ctl(epoll_fd, EPOLL_CTL_DEL, incoming.data.fd, nullptr));
+
+                    connections.erase(incoming.data.fd);
+
+                    continue;
+                }
+
+                c->second.append_to_message(b, n);
+
+                auto &request = c->second.get_request();
+
+                if (request.ready())
+                {
+                    // TODO find ("session" header) or create session and hand off the request
+
+                    HANDLE_INT_RESULT(send(incoming.data.fd, "OK", 2, 0));
+
+                    c->second.clear_message();
+                }
+                else
+                {
+                    // re-arm FD
+                    epoll_event event_config{};
+                    event_config.events = EPOLLIN | EPOLLONESHOT;
+                    event_config.data.fd = incoming.data.fd;
+                    HANDLE_INT_RESULT(epoll_ctl(epoll_fd, EPOLL_CTL_MOD, event_config.data.fd, &event_config));
+                }
             }
         }
-    }
-}
-
-int Server::get_expected_message_length(int connection, char *b, size_t n)
-{
-    // TODO keep all throwing types/functions in another module with try/catch blocks
-    static std::unordered_map<int, size_t> body_length_by_connection;
-
-    auto body_length = body_length_by_connection.find(connection);
-    if (body_length != body_length_by_connection.end())
-    {
-        return body_length->second;
-    }
-
-    int expected_length = -1;
-
-    // static std::regex re("\r\n\r\n|\r\r|\n\n", std::regex_constants::basic);
-
-    // std::match_results<char *> m;
-
-    // if (std::regex_search(b, b + n, m, re))
-    // {
-    // 	return m[0].first - b;
-    // }
-
-    std::string_view sv(b, n);
-
-    for (std::string delimiter : {"\r\n\r\n", "\r\r", "\n\n"})
-    {
-        size_t pos = sv.find(delimiter);
-        if (pos != sv.npos)
+        catch (std::exception &e)
         {
-            return pos + delimiter.size();
+            std::osyncstream(std::cout) << e.what();
+        }
+        catch (...)
+        {
+            std::osyncstream(std::cout) << "Unknown excpetion.\n";
         }
     }
-
-    return expected_length;
 }

@@ -1,5 +1,7 @@
 #include <signal.h>
 
+#include <iostream>
+
 #include "Server/Server.h"
 
 // Signal Handling
@@ -28,4 +30,6 @@ int main()
     Server server;
 
     server.listen_and_serve();
+
+    std::cout << "Shutting down gracefully.\n";
 }

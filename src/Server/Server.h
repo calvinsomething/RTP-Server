@@ -1,13 +1,15 @@
 #pragma once
 
-#include <chrono>
 #include <netinet/in.h>
 
+#include <chrono>
 #include <cstddef>
 #include <cstdio>
 #include <cstdlib>
 #include <string>
 #include <unordered_map>
+
+#include "RTSPRequest.h"
 
 // 554 is default, but would require root user priveleges
 inline constexpr unsigned RTSP_PORT = 8554;
@@ -48,7 +50,8 @@ class Server
 
         void clear_message();
         void append_to_message(const char *b, size_t n);
-        std::string_view get_rtsp_header();
+
+        const RTSPRequest &get_request() const;
 
       private:
         int fd = 0;
@@ -57,6 +60,13 @@ class Server
         std::chrono::time_point<std::chrono::steady_clock> expires;
 
         std::string message_buffer;
+
+        RTSPRequest request;
+    };
+
+    class Session
+    {
+        // Session (part of SETUP response) = "Session" ":" session-id [ ";" "timeout" "=" delta-seconds ]
     };
 
   public:

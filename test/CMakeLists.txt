@@ -15,14 +15,20 @@ enable_testing()
 add_compile_definitions(BINARY_DIR="${CMAKE_BINARY_DIR}")
 
 add_executable(${TARGET_NAME}
-	tests.cpp
-	RTSPTest.cpp
+	unit/RTSP.cpp
+
+	integration/RTSP.cpp
+	integration/RTSPTest.cpp
 )
 
 target_link_libraries(${TARGET_NAME}
 	GTest::gtest_main
 	Server
-)
+	util)
+
+target_include_directories(${TARGET_NAME}
+	PRIVATE
+		${CMAKE_SOURCE_DIR}/src)
 
 include(GoogleTest)
 gtest_discover_tests(${TARGET_NAME})
