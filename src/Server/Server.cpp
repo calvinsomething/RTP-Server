@@ -16,6 +16,8 @@
 
 #include "../util/Defer.h"
 #include "Exception.h"
+#include "RTSPResponse.h"
+#include "dispatch.h"
 
 // Public
 void Server::listen_and_serve()
@@ -154,9 +156,9 @@ void Server::serve()
 
                 if (request.ready())
                 {
-                    // TODO find ("session" header) or create session and hand off the request
+                    RTSPResponse response = dispatch(request);
 
-                    HANDLE_INT_RESULT(send(incoming.data.fd, "OK", 2, 0));
+                    HANDLE_INT_RESULT(send(incoming.data.fd, response.get_data(), response.get_length(), 0));
 
                     c->second.clear_message();
                 }
@@ -176,7 +178,22 @@ void Server::serve()
         }
         catch (...)
         {
-            std::osyncstream(std::cout) << "Unknown excpetion.\n";
+            std::osyncstream(std::cout) << "Unknown exception.\n";
         }
     }
+}
+
+RTSPResponse Server::dispatch(const RTSPRequest &request)
+{
+    std::string method = request.get_method();
+
+    auto h = Dispatch::rtsp.find(method);
+
+    if (h == Dispatch::rtsp.end())
+    {
+        throw Exception(
+            "Invalid method."); // TODO thrown Exceptions should be able to be used to write back error information
+    }
+
+    return h->second(request);
 }

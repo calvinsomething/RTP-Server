@@ -22,9 +22,11 @@ endforeach()
 # Libraries
 set(SERVER_FILES
 	Server.cpp
+	dispatch.cpp
 	Connection.cpp
 	Exception.cpp
-	RTSPRequest.cpp)
+	RTSPRequest.cpp
+	RTSPResponse.cpp)
 
 set(UTIL_FILES
 	Defer.cpp

@@ -3,7 +3,6 @@
 
 #include "../test_common.h"
 #include "RTSPTest.h"
-#include "Server/RTSPRequest.h"
 
 TEST_F(RTSPTest, DescribeRequest)
 {
@@ -13,7 +12,7 @@ TEST_F(RTSPTest, DescribeRequest)
     int n = receive(b, sizeof(b));
     HANDLE_INT_RESULT(n);
 
-    ASSERT_STREQ(b, "OK");
+    ASSERT_STREQ(b, "DESCRIBE");
 }
 
 TEST_F(RTSPTest, SplitDescribeRequest)
@@ -29,5 +28,5 @@ TEST_F(RTSPTest, SplitDescribeRequest)
     n = receive(b, sizeof(b));
     HANDLE_INT_RESULT(n);
 
-    ASSERT_STREQ(b, "OK");
+    ASSERT_STREQ(b, "DESCRIBE");
 }
