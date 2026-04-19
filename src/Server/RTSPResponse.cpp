@@ -46,9 +46,18 @@ void RTSPResponse::set_header(const std::string &key, const std::string &value)
     headers.insert_or_assign(key, value);
 }
 
-void RTSPResponse::set_status(std::string_view s)
+std::string_view RTSPResponse::get_status_string(StatusCode sc)
 {
-    status = s;
+    switch (sc)
+    {
+    case StatusCode::OK:
+        return "200 OK";
+    }
+}
+
+void RTSPResponse::set_status(StatusCode sc)
+{
+    status = get_status_string(sc);
 }
 
 void RTSPResponse::append_header(const std::string &key, const std::string &value)

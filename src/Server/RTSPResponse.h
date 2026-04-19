@@ -3,14 +3,14 @@
 #include <string>
 #include <unordered_map>
 
-namespace Status
-{
-constexpr std::string_view OK{"200 OK"};
-};
-
 class RTSPResponse
 {
   public:
+    enum class StatusCode
+    {
+        OK = 200,
+    };
+
     RTSPResponse() = default;
     RTSPResponse(const std::string &method);
 
@@ -20,7 +20,7 @@ class RTSPResponse
     void set_header(const std::string &key, const std::string &value);
     void append_header(const std::string &key, const std::string &value);
 
-    void set_status(std::string_view s);
+    void set_status(StatusCode sc);
 
     void marshal_data();
 
@@ -28,5 +28,6 @@ class RTSPResponse
     std::string buffer;
     std::string_view status;
 
+    std::string_view get_status_string(StatusCode sc);
     std::unordered_map<std::string, std::string> headers;
 };

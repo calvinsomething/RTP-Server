@@ -20,7 +20,7 @@ RTSPResponse handle_options(const RTSPRequest &request)
     response.set_header("CSeq", request.get_header("cseq"));
     response.set_header("Public", "DESCRIBE, SETUP, TEARDOWN, PLAY, PAUSE");
 
-    response.set_status(Status::OK);
+    response.set_status(RTSPResponse::StatusCode::OK);
 
     response.marshal_data();
 
