@@ -16,6 +16,7 @@ add_compile_definitions(BINARY_DIR="${CMAKE_BINARY_DIR}")
 
 add_executable(${TARGET_NAME}
 	unit/RTSP.cpp
+	unit/util.cpp
 
 	integration/RTSP.cpp
 	integration/RTSPTest.cpp

@@ -1,4 +1,5 @@
 #include "RTSPResponse.h"
+#include "Exception.h"
 
 // Response    =     Status-Line         ; Section 7.1
 //                  *(    general-header      ; Section 5
@@ -13,7 +14,7 @@ RTSPResponse::RTSPResponse(const std::string &method)
     buffer = method;
 }
 
-void RTSPResponse::marshal_data()
+void RTSPResponse::marshal()
 {
     buffer.clear();
 
@@ -29,6 +30,8 @@ void RTSPResponse::marshal_data()
         buffer.push_back('\n');
     }
     buffer.push_back('\n');
+
+    buffer.append(body);
 }
 
 const char *RTSPResponse::get_data() const
@@ -52,6 +55,8 @@ std::string_view RTSPResponse::get_status_string(StatusCode sc)
     {
     case StatusCode::OK:
         return "200 OK";
+    default:
+        throw Exception("Invalid status code.");
     }
 }
 

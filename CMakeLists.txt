@@ -29,6 +29,7 @@ set(SERVER_FILES
 	RTSPResponse.cpp)
 
 set(UTIL_FILES
+	misc.cpp
 	Defer.cpp
 	RingBuffer.cpp)
 

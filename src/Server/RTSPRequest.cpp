@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <vector>
 
+#include "../util/misc.h"
 #include "Exception.h"
 
 // Method         =         "DESCRIBE"              ; Section 10.2
@@ -27,9 +28,6 @@
 //                  |          Range                    ; Section 12.29
 //                  |          Referer                  ; Section 12.30
 //                  |          User-Agent               ; Section 12.41
-
-#define _TO_STR(val) #val
-#define TO_STR(val) _TO_STR(val)
 
 #define THROW_IF_FALSE(condition, msg)                                                                                 \
     {                                                                                                                  \

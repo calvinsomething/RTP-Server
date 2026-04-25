@@ -1,5 +1,4 @@
 #include <gtest/gtest.h>
-#include <sys/socket.h>
 
 #include "../test_common.h"
 #include "Server/Exception.h"

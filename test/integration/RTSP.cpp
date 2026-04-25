@@ -8,11 +8,14 @@ TEST_F(RTSPTest, DescribeRequest)
 {
     HANDLE_INT_RESULT(send(get_fd(), describe_test_message, sizeof(describe_test_message) - 1, 0));
 
-    char b[2048]{};
-    int n = receive(b, sizeof(b));
+    std::string b(2048, 0);
+    int n = receive(b.data(), b.size());
     HANDLE_INT_RESULT(n);
 
-    ASSERT_STREQ(b, "DESCRIBE");
+    for (auto p : describe_test_response_parts)
+    {
+        ASSERT_NE(b.find(p), std::string::npos);
+    }
 }
 
 TEST_F(RTSPTest, SplitDescribeRequest)
@@ -24,11 +27,14 @@ TEST_F(RTSPTest, SplitDescribeRequest)
 
     HANDLE_INT_RESULT(send(get_fd(), describe_test_message + half, n - half, 0));
 
-    char b[2048]{};
-    n = receive(b, sizeof(b));
+    std::string b(2048, 0);
+    n = receive(b.data(), b.size());
     HANDLE_INT_RESULT(n);
 
-    ASSERT_STREQ(b, "DESCRIBE");
+    for (auto p : describe_test_response_parts)
+    {
+        ASSERT_NE(b.find(p), std::string::npos);
+    }
 }
 
 TEST_F(RTSPTest, OptionsRequest)

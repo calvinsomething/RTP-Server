@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Server/RTSPResponse.h"
+
 // Requests
 static inline const char describe_test_message[] = "DESCRIBE rtsp://192.168.1.100:554/stream1 RTSP/1.0\n"
                                                    "CSeq: 2\n"
@@ -22,4 +24,8 @@ static inline const char *options_test_response_parts[] = {
     "RTSP/1.0 200 OK",
     "CSeq: 2",
     "Public: DESCRIBE, SETUP, TEARDOWN, PLAY, PAUSE",
+};
+
+static inline const char *describe_test_response_parts[] = {
+    "RTSP/1.0 200 OK", "CSeq: 2", "Content-Type: application/sdp", "Content-Length: 351", HARD_CODED_SDP.data(),
 };
