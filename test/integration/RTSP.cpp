@@ -51,3 +51,18 @@ TEST_F(RTSPTest, OptionsRequest)
         ASSERT_NE(buffer.find(p), std::string::npos);
     }
 }
+
+TEST_F(RTSPTest, SetupRequest)
+{
+    HANDLE_INT_RESULT(send(get_fd(), setup_test_message, sizeof(setup_test_message) - 1, 0));
+
+    std::string buffer(2048, 0);
+
+    int n = receive(buffer.data(), buffer.size());
+    HANDLE_INT_RESULT(n);
+
+    for (auto p : setup_test_response_parts)
+    {
+        ASSERT_NE(buffer.find(p), std::string::npos);
+    }
+}

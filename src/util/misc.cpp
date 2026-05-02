@@ -12,3 +12,24 @@ std::string get_date_string(std::chrono::time_point<std::chrono::system_clock> t
 
     return ss.str();
 }
+
+std::vector<std::string_view> split(std::string_view str, char c)
+{
+    std::vector<std::string_view> output;
+
+    for (size_t i = 0; i < str.size();)
+    {
+        size_t j = str.find(c, i);
+        if (j == std::string::npos)
+        {
+            j = str.size();
+        }
+
+        auto begin = str.begin();
+        output.push_back({begin + i, begin + j});
+
+        i = j + 1;
+    }
+
+    return output;
+}

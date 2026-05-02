@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <string>
 #include <type_traits>
+#include <vector>
 
 #define _TO_STR(val) #val
 #define TO_STR(val) _TO_STR(val)
@@ -29,3 +30,5 @@ template <typename T, typename = std::enable_if_t<std::is_floating_point<T>::val
 }
 
 std::string get_date_string(std::chrono::time_point<std::chrono::system_clock> timestamp);
+
+std::vector<std::string_view> split(std::string_view str, char c);

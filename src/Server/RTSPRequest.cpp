@@ -2,6 +2,7 @@
 
 #include <charconv>
 #include <cstddef>
+#include <system_error>
 #include <vector>
 
 #include "../util/misc.h"
@@ -111,8 +112,8 @@ void RTSPRequest::parse_request(const std::string &message)
         {
             size_t length;
 
-            auto err = std::from_chars(body_length->second.begin().base(), body_length->second.end().base(), length);
-            THROW_IF_FALSE(!err.ptr, err.ptr);
+            auto result = std::from_chars(body_length->second.begin().base(), body_length->second.end().base(), length);
+            THROW_IF_FALSE((result.ec == std::errc{}), result.ptr);
 
             if (header_end + length > message.size())
             {

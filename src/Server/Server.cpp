@@ -174,7 +174,7 @@ void Server::serve()
         }
         catch (std::exception &e)
         {
-            std::osyncstream(std::cout) << e.what();
+            std::osyncstream(std::cout) << e.what() << std::endl;
         }
         catch (...)
         {

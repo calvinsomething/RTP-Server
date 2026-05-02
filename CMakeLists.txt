@@ -25,15 +25,21 @@ set(SERVER_FILES
 	dispatch.cpp
 	Connection.cpp
 	Exception.cpp
+	RTPTransport.cpp
 	RTSPRequest.cpp
-	RTSPResponse.cpp)
+	RTSPResponse.cpp
+	Session.cpp
+	UDP.cpp)
+
+set(MEDIA_FILES
+	Track.cpp)
 
 set(UTIL_FILES
 	misc.cpp
 	Defer.cpp
 	RingBuffer.cpp)
 
-foreach(lib Server;util)
+foreach(lib Server;media;util)
 	add_library(${lib})
 
 	string(TOUPPER ${lib} lib_upper)

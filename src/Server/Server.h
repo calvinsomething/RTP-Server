@@ -15,7 +15,16 @@
 // 554 is default, but would require root user priveleges
 inline constexpr unsigned RTSP_PORT = 8554;
 
-// RFC dictates these must be a consecutive pair
+// TODO
+// reserve some number of ports from a range and keep them available
+// each RTP connection will require a pair of ports
+//
+// RFC:
+// For UDP and similar protocols, RTP
+// uses an even port number and the corresponding RTCP stream uses the
+// next higher (odd) port number. If an application is supplied with an
+// odd number for use as the RTP port, it should replace this number
+// with the next lower (even) number.
 inline constexpr unsigned RTP_PORT = 5004; // must be even number
 inline constexpr unsigned RTCP_PORT = 5005;
 

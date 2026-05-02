@@ -16,6 +16,9 @@ class RingBuffer
     const char *write(const char *bytes, size_t size);
     const char *write(const char **parts, size_t *sizes, size_t count);
 
+    const char *write_as_c_str(const char *bytes, size_t size);
+    char *write_as_c_str(char **parts, size_t *sizes, size_t count);
+
   private:
     char *buffer = 0;
     size_t i = 0, n = 0;
