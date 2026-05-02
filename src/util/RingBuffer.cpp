@@ -71,7 +71,7 @@ char *RingBuffer::write(char **parts, size_t *sizes, size_t count)
     return dest;
 }
 
-char *RingBuffer::write_as_c_str(char **parts, size_t *sizes, size_t count)
+char *RingBuffer::write_as_c_str(const char **parts, size_t *sizes, size_t count)
 {
     size_t total_size = 0;
     for (size_t i = 0; i < count; ++i)

@@ -11,7 +11,7 @@ Exception::Exception(const char *msg)
 Exception::Exception(std::string_view msg)
 {
     std::lock_guard<std::mutex> lock(buffer_mutex);
-    message = buffer.write(msg.begin(), msg.size());
+    message = buffer.write_as_c_str(msg.begin(), msg.size());
 }
 
 Exception::Exception(const char *prefix, const char *msg)
@@ -30,7 +30,7 @@ void Exception::store_prefixed_msg(const char *prefix, const char *msg)
     size_t sizes[] = {std::strlen(prefix), std::strlen(msg)};
 
     std::lock_guard<std::mutex> lock(buffer_mutex);
-    message = buffer.write(parts, sizes, array_size(parts));
+    message = buffer.write_as_c_str(parts, sizes, array_size(parts));
 }
 
 const char *Exception::what() const noexcept
