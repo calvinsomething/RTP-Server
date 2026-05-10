@@ -7,6 +7,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_compile_options(-pie -Wall -pthread)
 
+set(MEDIA_DIRECTORY ${CMAKE_BINARY_DIR}/media)
+add_compile_definitions("MEDIA_DIRECTORY=\"${MEDIA_DIRECTORY}\"")
+
 # Source Files
 set(SOURCE_DIR src)
 
@@ -59,3 +62,7 @@ endif()
 # Compile Commands
 execute_process(COMMAND
 	${CMAKE_COMMAND} -E create_symlink ${CMAKE_BINARY_DIR}/compile_commands.json ${CMAKE_SOURCE_DIR}/compile_commands.json)
+
+# Media
+execute_process(COMMAND
+	${CMAKE_COMMAND} -E create_symlink ${CMAKE_SOURCE_DIR}/media ${MEDIA_DIRECTORY})

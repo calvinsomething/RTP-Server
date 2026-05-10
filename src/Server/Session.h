@@ -20,7 +20,7 @@ class Session
     static Session &get(const std::string &id);
 
     Session(PrivateKey key, const std::string &id);
-    void end();
+    void terminate();
 
     std::string get_id();
 

@@ -49,7 +49,7 @@ Session::Session(PrivateKey key, const std::string &id) : id(id)
 {
 }
 
-void Session::end()
+void Session::terminate()
 {
     sessions.erase(id);
 }

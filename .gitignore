@@ -11,3 +11,7 @@ compile_commands.json
 # Tests
 !test/
 !test/*/
+
+# Media
+!media/
+!media/*/

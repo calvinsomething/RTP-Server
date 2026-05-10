@@ -19,7 +19,7 @@ static inline const char options_test_message[] = "OPTIONS rtsp://192.168.1.100:
                                                   "CSeq: 2\n"
                                                   "User-Agent: LibVLC/3.0.18 (Live555 Streaming Media v2016.11.28)\n\n";
 
-static inline const char setup_test_message[] = "SETUP rtsp://example.com/foo/bar/baz.rm RTSP/1.0\n"
+static inline const char setup_test_message[] = "SETUP rtsp://example.com/stream/trackID=0 RTSP/1.0\n"
                                                 "CSeq: 302\n"
                                                 "Transport: RTP/AVP;unicast;client_port=4588-4589\n\n";
 

@@ -105,6 +105,10 @@ RTSPResponse handle_pause(const RTSPRequest &request)
 
 RTSPResponse handle_teardown(const RTSPRequest &request)
 {
+    Session &session = Session::get(request.get_header("session"));
+
+    session.terminate();
+
     return RTSPResponse();
 }
 }; // namespace Dispatch
