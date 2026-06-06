@@ -28,21 +28,21 @@ set(SERVER_FILES
 	dispatch.cpp
 	Connection.cpp
 	Exception.cpp
-	RTPTransport.cpp
 	RTSPRequest.cpp
 	RTSPResponse.cpp
 	Session.cpp
+	RTPPacket.cpp
+	RTPTransport.cpp
+	Stream.cpp
+	Track.cpp
 	UDP.cpp)
-
-set(MEDIA_FILES
-	Track.cpp)
 
 set(UTIL_FILES
 	misc.cpp
 	Defer.cpp
 	RingBuffer.cpp)
 
-foreach(lib Server;media;util)
+foreach(lib Server;util)
 	add_library(${lib})
 
 	string(TOUPPER ${lib} lib_upper)
@@ -53,6 +53,11 @@ foreach(lib Server;media;util)
 
 	target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${lib})
 endforeach()
+
+target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
+	avformat
+	avcodec
+	avutil)
 
 # Tests
 if (BUILD_TESTS)

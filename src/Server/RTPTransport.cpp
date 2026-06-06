@@ -14,7 +14,7 @@
 // The syntax for the transport specifier is:
 //		transport/profile/lower-transport
 
-RTPTransport::RTPTransport(std::string_view request_header_value)
+RTPTransport::RTPTransport(in6_addr client_addr, std::string_view request_header_value)
 {
     size_t i = request_header_value.find(';');
     if (i == std::string::npos)
@@ -61,6 +61,8 @@ RTPTransport::RTPTransport(std::string_view request_header_value)
     }
 
     bind();
+
+    rtp_socket.connect(client_addr);
 }
 
 void RTPTransport::bind()
@@ -168,4 +170,9 @@ std::string RTPTransport::get_string()
     s.resize(cursor - s.begin());
 
     return s;
+}
+
+void RTPTransport::send(uint8_t *data, size_t size)
+{
+    rtp_socket.send(data, size);
 }

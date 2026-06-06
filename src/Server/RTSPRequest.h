@@ -1,5 +1,7 @@
 #pragma once
 
+#include <netinet/in.h>
+
 #include <set>
 #include <string>
 #include <unordered_map>
@@ -20,6 +22,8 @@ class RTSPRequest
     std::string get_header(std::string key) const;
 
     const std::string &get_body() const;
+
+    in6_addr client_addr = {};
 
   private:
     static constexpr size_t PARSE_COMPLETE = -1;

@@ -41,5 +41,5 @@ TEST(RTSPRequestTest, RequestException)
 
 TEST(RTPTransportTest, RTPTransport)
 {
-    RTPTransport transport{"RTP/AVP;unicast;client_port=4588-4589"};
+    RTPTransport transport{in6_addr{}, "RTP/AVP;unicast;client_port=4588-4589"};
 }

@@ -9,8 +9,7 @@ TEST_F(RTSPTest, DescribeRequest)
     HANDLE_INT_RESULT(send(get_fd(), describe_test_message, sizeof(describe_test_message) - 1, 0));
 
     std::string b(2048, 0);
-    int n = receive(b.data(), b.size());
-    HANDLE_INT_RESULT(n);
+    HANDLE_INT_RESULT(receive(b.data(), b.size()));
 
     for (auto p : describe_test_response_parts)
     {

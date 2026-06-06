@@ -1,5 +1,6 @@
 #pragma once
 
+#include <mutex>
 #include <netinet/in.h>
 
 #include <chrono>
@@ -55,13 +56,13 @@ class Server
 
         int get_fd() const;
 
-        // get_client_ip
-        // get_client_port
-
         void clear_message();
         void append_to_message(const char *b, size_t n);
 
         const RTSPRequest &get_request() const;
+
+        void lock();
+        void unlock();
 
       private:
         int fd = 0;
@@ -70,6 +71,8 @@ class Server
         std::chrono::time_point<std::chrono::steady_clock> expires;
 
         std::string message_buffer;
+
+        std::mutex mutex;
 
         RTSPRequest request;
     };

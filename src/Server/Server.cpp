@@ -135,10 +135,13 @@ void Server::serve()
                     }
                 }
 
+                c->second.lock();
+                Defer _d1([&]() { c->second.unlock(); });
+
                 char b[4096] = {};
 
                 int n = recv(incoming.data.fd, b, sizeof(b), 0);
-                HANDLE_INT_RESULT(n); // TODO use an exception instead of this handler that exits
+                HANDLE_INT_RESULT(n); // TODO throw an exception instead of using handler that exits
 
                 if (!n)
                 {

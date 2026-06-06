@@ -7,6 +7,8 @@
 #include <unistd.h>
 
 #include "../util/Locker.h"
+#include "../util/misc.h"
+#include "Exception.h"
 
 static Locker<std::queue<uint16_t>> even_ports;
 struct InitPorts
@@ -96,13 +98,40 @@ bool Socket::bind(uint16_t port)
     reset_port();
 
     socket_fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    // check err
+    if (socket_fd < 0)
+    {
+        throw Exception(strerror(errno));
+    }
 
-    sockaddr_in address{};
-    // TODO ...
+    sockaddr_in6 address{};
+    address.sin6_addr = in6addr_any;
+    address.sin6_port = port;
+    address.sin6_family = AF_INET;
+
+    if (::bind(socket_fd, reinterpret_cast<sockaddr *>(&address), sizeof(address)) < 0)
+    {
+        throw Exception(strerror(errno));
+    }
 
     Socket::port = port;
+
     return true;
+}
+
+void Socket::connect(in6_addr client_addr)
+{
+    if (::connect(socket_fd, reinterpret_cast<sockaddr *>(&client_addr), sizeof(client_addr)) < 0)
+    {
+        throw Exception("Failed to connect UDP socket: ", strerror(errno));
+    }
+}
+
+void Socket::send(uint8_t *data, size_t size)
+{
+    if (::send(socket_fd, data, size, 0) < 0)
+    {
+        throw Exception("Failed to connect UDP socket: ", strerror(errno));
+    }
 }
 
 uint16_t Socket::get_port()

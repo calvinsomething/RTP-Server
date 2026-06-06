@@ -41,11 +41,12 @@ RTSPResponse handle_setup(const RTSPRequest &request)
 
     std::string transport_string = request.get_header("transport");
 
+    // Try all transport header values before throwing exception
     for (std::string_view transport_value : split(transport_string, ','))
     {
         try
         {
-            track = &session.tracks.emplace_back(request.get_uri(), transport_value);
+            track = &session.emplace_track(request.client_addr, request.get_uri(), transport_value);
             break;
         }
         catch (Exception &e)

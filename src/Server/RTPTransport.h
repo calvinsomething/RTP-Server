@@ -1,14 +1,19 @@
 #pragma once
 
-#include "UDP.h"
+#include <netinet/in.h>
+
 #include <string>
+
+#include "UDP.h"
 
 class RTPTransport
 {
   public:
-    RTPTransport(std::string_view request_header_value);
+    RTPTransport(in6_addr client_addr, std::string_view request_header_value);
 
     std::string get_string();
+
+    void send(uint8_t *data, size_t size);
 
   private:
     bool unicast = false;

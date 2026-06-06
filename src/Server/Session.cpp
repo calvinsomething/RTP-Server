@@ -58,3 +58,22 @@ std::string Session::get_id()
 {
     return id;
 }
+
+Track &Session::emplace_track(in6_addr client_address, const std::string &uri, std::string_view transport_value)
+{
+    return tracks.emplace_back(client_address, uri, transport_value);
+}
+
+void Session::tick()
+{
+    for (auto &s : sessions)
+    {
+        if (s.second.is_playing)
+        {
+            for (auto &t : s.second.tracks)
+            {
+                t.send_frame();
+            }
+        }
+    }
+}
