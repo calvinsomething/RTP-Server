@@ -23,6 +23,11 @@ static inline const char setup_test_message[] = "SETUP rtsp://example.com/stream
                                                 "CSeq: 302\n"
                                                 "Transport: RTP/AVP;unicast;client_port=4588-4589\n\n";
 
+static inline const char play_test_message_fmt[] = "PLAY rtsp://audio.example.com/audio RTSP/1.0\n"
+                                                   "CSeq: 302\n"
+                                                   "Session: %s\n"
+                                                   "Range: npt=10-15\n\n";
+
 // Responses
 static inline const char *options_test_response_parts[] = {
     "RTSP/1.0 200 OK",

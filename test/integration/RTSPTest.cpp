@@ -42,16 +42,16 @@ RTSPTest::RTSPTest()
 
 RTSPTest::~RTSPTest()
 {
-    close(fd);
-
     HANDLE_INT_RESULT(kill(child_pid, SIGINT));
+
+    close(fd);
 
     int status = 0;
     HANDLE_INT_RESULT(waitpid(child_pid, &status, 0));
 
-    if (!WIFEXITED(status))
+    if (WIFSIGNALED(status))
     {
-        std::cout << "Child process (" << child_pid << ") failed to exit normally.\n";
+        std::cout << "Child killed by signal: " << WTERMSIG(status) << "\n";
     }
 }
 

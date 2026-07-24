@@ -30,14 +30,6 @@
 //                  |          Referer                  ; Section 12.30
 //                  |          User-Agent               ; Section 12.41
 
-#define THROW_IF_FALSE(condition, msg)                                                                                 \
-    {                                                                                                                  \
-        if (!condition)                                                                                                \
-        {                                                                                                              \
-            throw Exception(__FILE__ ":" TO_STR(__LINE__) ": ", msg);                                                  \
-        }                                                                                                              \
-    }
-
 /*
 From RFC: "Lines are terminated by CRLF, but receivers should be prepared
 to also interpret CR and LF by themselves as line terminators."

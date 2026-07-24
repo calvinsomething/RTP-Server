@@ -1,11 +1,12 @@
 #include "dispatch.h"
 
-#include "../util/misc.h"
+#include <optional>
+
 #include "Exception.h"
 #include "RTSPRequest.h"
 #include "RTSPResponse.h"
 #include "Session.h"
-#include <optional>
+#include "util/misc.h"
 
 namespace Dispatch
 {
@@ -34,7 +35,7 @@ RTSPResponse handle_setup(const RTSPRequest &request)
 {
     std::string session_id = request.get_header("session");
 
-    Session &session = session_id.empty() ? Session::get() : Session::get(session_id);
+    std::shared_ptr<Session> session = session_id.empty() ? Session::get() : Session::get(session_id);
 
     Track *track = 0;
     std::optional<Exception> first_exception;
@@ -46,7 +47,7 @@ RTSPResponse handle_setup(const RTSPRequest &request)
     {
         try
         {
-            track = &session.emplace_track(request.client_addr, request.get_uri(), transport_value);
+            track = &session->emplace_track(request.client_addr, request.get_uri(), transport_value);
             break;
         }
         catch (Exception &e)
@@ -69,7 +70,7 @@ RTSPResponse handle_setup(const RTSPRequest &request)
 
     response.set_header("Date", get_date_string(std::chrono::system_clock::now()));
 
-    response.set_header("Session", session.get_id());
+    response.set_header("Session", session->get_id());
 
     response.set_header("Transport", track->transport.get_string());
 
@@ -96,6 +97,34 @@ RTSPResponse handle_options(const RTSPRequest &request)
 
 RTSPResponse handle_play(const RTSPRequest &request)
 {
+    std::string session_id = request.get_header("session");
+
+    std::shared_ptr<Session> session = Session::get(session_id);
+
+    std::string range = request.get_header("range");
+
+    if (range.empty())
+    {
+        session->play();
+    }
+    else
+    {
+        auto parts = split(range, '-');
+
+        float begin;
+        auto result = std::from_chars(parts[0].cbegin(), parts[0].cend(), begin);
+        THROW_IF_FALSE((result.ec == std::errc{}), parts[0]);
+
+        float end = 0;
+        if (parts.size() > 1)
+        {
+            result = std::from_chars(parts[0].cbegin(), parts[0].cend(), end);
+            THROW_IF_FALSE((result.ec == std::errc{}), parts[0]);
+        }
+
+        session->play(begin, end);
+    }
+
     return RTSPResponse();
 }
 
@@ -106,9 +135,9 @@ RTSPResponse handle_pause(const RTSPRequest &request)
 
 RTSPResponse handle_teardown(const RTSPRequest &request)
 {
-    Session &session = Session::get(request.get_header("session"));
+    std::shared_ptr<Session> session = Session::get(request.get_header("session"));
 
-    session.terminate();
+    session->teardown();
 
     return RTSPResponse();
 }

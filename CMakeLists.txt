@@ -18,6 +18,10 @@ add_executable(${CMAKE_PROJECT_NAME})
 set(SOURCE_FILES
 	main.cpp)
 
+target_include_directories(${CMAKE_PROJECT_NAME}
+	PRIVATE
+		${CMAKE_SOURCE_DIR}/src)
+
 foreach(path ${SOURCE_FILES})
 	target_sources(${CMAKE_PROJECT_NAME} PRIVATE "${SOURCE_DIR}/${path}")
 endforeach()
@@ -46,6 +50,10 @@ foreach(lib Server;util)
 	add_library(${lib})
 
 	string(TOUPPER ${lib} lib_upper)
+
+	target_include_directories(${lib}
+		PRIVATE
+			${CMAKE_SOURCE_DIR}/src)
 
 	foreach(path ${${lib_upper}_FILES})
 		target_sources(${lib} PRIVATE "${SOURCE_DIR}/${lib}/${path}")

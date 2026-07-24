@@ -1,6 +1,20 @@
 #include "Stream.h"
 
+#include <libavformat/avformat.h>
+#include <libavutil/error.h>
+
 #include "Exception.h"
+#include "util/misc.h"
+
+#define HANDLE_AV_ERR(fn)                                                                                              \
+    {                                                                                                                  \
+        int result = fn;                                                                                               \
+        if (result < 0)                                                                                                \
+        {                                                                                                              \
+            char buf[512] = {};                                                                                        \
+            throw Exception(__FILE__ ":" TO_STR(__LINE__) ": ", av_make_error_string(buf, sizeof(buf), result));       \
+        }                                                                                                              \
+    }
 
 void Stream::load(const char *file_name, MediaType media_type)
 {
@@ -22,6 +36,10 @@ void Stream::load(const char *file_name, MediaType media_type)
     {
         throw Exception("Could not allocate packet");
     }
+
+    stream = ctx->streams[stream_index];
+
+    timestamp_frequency = media_type == AVMEDIA_TYPE_AUDIO ? stream->codecpar->sample_rate : VIDEO_TIMESTAMP_FREQUENCY;
 }
 
 Stream::Stream(Stream &&other)
@@ -42,23 +60,26 @@ Stream::~Stream()
     av_packet_free(&packet);
 }
 
+void Stream::jump_to(float timestamp)
+{
+    HANDLE_AV_ERR(
+        av_seek_frame(ctx, stream_index, av_rescale_q(timestamp * timestamp_frequency, {1, 1}, stream->time_base), 0));
+}
+
+float Stream::sample_rate_to_npt(int64_t timestamp)
+{
+    return float(timestamp) / stream->codecpar->sample_rate;
+}
+
 Stream::Packet Stream::read_frame()
 {
-    AVStream *stream = ctx->streams[stream_index];
-
-    if (!stream || !stream->codecpar)
-    {
-        throw Exception("invalid stream");
-    }
-
-    while (av_read_frame(ctx, packet) >= 0)
+    int result;
+    while ((result = av_read_frame(ctx, packet)) >= 0)
     {
         if (packet->stream_index == stream_index)
         {
-            int32_t rtp_timestamp = av_rescale_q(packet->pts, stream->time_base, {1, stream->codecpar->sample_rate});
-
             return {
-                rtp_timestamp,
+                av_rescale_q(packet->pts, stream->time_base, {1, int(timestamp_frequency)}),
                 packet->size,
                 packet->data,
             };

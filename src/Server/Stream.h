@@ -7,6 +7,8 @@ extern "C"
 
 class Stream
 {
+    static constexpr int64_t VIDEO_TIMESTAMP_FREQUENCY = 90000;
+
   public:
     using MediaType = AVMediaType;
     struct Packet
@@ -26,6 +28,9 @@ class Stream
 
     void load(const char *file_name, MediaType media_type);
 
+    void jump_to(float timestamp);
+    float sample_rate_to_npt(int64_t timestamp);
+
     Packet read_frame();
 
   private:
@@ -34,4 +39,5 @@ class Stream
     AVPacket *packet = 0;
 
     int stream_index = 0;
+    int64_t timestamp_frequency = 0;
 };

@@ -10,12 +10,18 @@
 
 class Track
 {
+    static constexpr float frame_buffer_size_seconds = 10;
+
   public:
     Track(in6_addr client_addr, std::string_view uri, std::string_view transport_header_value);
 
     RTPTransport transport;
 
-    void send_frame();
+    bool send_frames();
+
+    void set_play_time(float npt);
+
+    void set_play_range_end(float npt);
 
   private:
     struct Data
@@ -35,4 +41,6 @@ class Track
     std::string_view get_id_from_uri(std::string_view uri);
 
     Stream stream;
+
+    float play_time = 0, play_range_end = 0;
 };

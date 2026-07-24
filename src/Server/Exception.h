@@ -6,6 +6,16 @@
 
 #include "../util/RingBuffer.h"
 
+#ifndef THROW_IF_FALSE
+#define THROW_IF_FALSE(condition, msg)                                                                                 \
+    {                                                                                                                  \
+        if (!condition)                                                                                                \
+        {                                                                                                              \
+            throw Exception(__FILE__ ":" TO_STR(__LINE__) ": ", msg);                                                  \
+        }                                                                                                              \
+    }
+#endif
+
 class Exception : public std::exception
 {
   public:

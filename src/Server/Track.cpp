@@ -43,33 +43,60 @@ std::string_view Track::get_id_from_uri(std::string_view uri)
     return std::string_view(uri.begin() + i + key_str.size(), uri.end());
 }
 
-void Track::send_frame()
+bool Track::send_frames()
 {
-    Stream::Packet frame = stream.read_frame();
-    if (!frame.size || !frame.data)
+    float cutoff = play_time + frame_buffer_size_seconds;
+    if (play_range_end)
     {
-        // TODO
-        // done? always error?
+        cutoff = play_range_end < cutoff ? play_range_end : cutoff;
     }
 
-    int bytes_to_send = frame.size;
-    uint8_t *data = frame.data;
-    uint32_t offset = 0;
+    bool did_send = false;
 
-    while (1)
+    while (play_time < cutoff)
     {
-        RTPPacket packet(ssrc, frame.timestamp, bytes_to_send, data, offset, sequence_number++, is_video);
+        did_send = true;
 
-        transport.send(packet.data, packet.length);
-
-        uint32_t bytes_sent = packet.get_bytes_written();
-
-        if (bytes_sent >= uint32_t(bytes_to_send))
+        Stream::Packet frame = stream.read_frame();
+        if (!frame.size || !frame.data)
         {
-            break;
+            // TODO
+            // done? always error?
         }
 
-        bytes_to_send -= bytes_sent;
-        offset += bytes_sent;
+        play_time = stream.sample_rate_to_npt(frame.timestamp);
+
+        int bytes_to_send = frame.size;
+        uint8_t *data = frame.data;
+        uint32_t offset = 0;
+
+        while (1)
+        {
+            RTPPacket packet(ssrc, frame.timestamp, bytes_to_send, data, offset, sequence_number++, is_video);
+
+            transport.send(packet.data, packet.length);
+
+            uint32_t bytes_sent = packet.get_bytes_written();
+
+            if (bytes_sent >= uint32_t(bytes_to_send))
+            {
+                break;
+            }
+
+            bytes_to_send -= bytes_sent;
+            offset += bytes_sent;
+        }
     }
+
+    return did_send;
+}
+
+void Track::set_play_time(float npt)
+{
+    play_time = npt;
+}
+
+void Track::set_play_range_end(float npt)
+{
+    play_range_end = npt;
 }

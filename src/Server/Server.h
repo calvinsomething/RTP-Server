@@ -16,19 +16,6 @@
 // 554 is default, but would require root user priveleges
 inline constexpr unsigned RTSP_PORT = 8554;
 
-// TODO
-// reserve some number of ports from a range and keep them available
-// each RTP connection will require a pair of ports
-//
-// RFC:
-// For UDP and similar protocols, RTP
-// uses an even port number and the corresponding RTCP stream uses the
-// next higher (odd) port number. If an application is supplied with an
-// odd number for use as the RTP port, it should replace this number
-// with the next lower (even) number.
-inline constexpr unsigned RTP_PORT = 5004; // must be even number
-inline constexpr unsigned RTCP_PORT = 5005;
-
 #define HANDLE_INT_RESULT(result)                                                                                      \
     {                                                                                                                  \
         if (result == -1)                                                                                              \
@@ -78,14 +65,13 @@ class Server
     };
 
   public:
-    void listen_and_serve();
+    void listen();
+    void serve();
+    void interrupt();
 
   private:
     int listener_socket = 0, rtsp_socket = 0, rtp_socket = 0, rtcp_socket = 0;
     int interrupt_fd = 0;
-
-    void start_listener();
-    void serve();
 
     RTSPResponse dispatch(const RTSPRequest &request);
 

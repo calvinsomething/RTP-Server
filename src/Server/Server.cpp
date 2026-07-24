@@ -1,6 +1,9 @@
 #include "Server.h"
 
+#include <asm-generic/socket.h>
 #include <netinet/in.h>
+#include <netinet/ip.h>
+#include <netinet/tcp.h>
 #include <sys/epoll.h>
 #include <sys/eventfd.h>
 #include <sys/socket.h>
@@ -10,40 +13,25 @@
 #include <cstring>
 #include <iostream>
 #include <syncstream>
-#include <thread>
 #include <utility>
-#include <vector>
 
-#include "../util/Defer.h"
 #include "Exception.h"
 #include "RTSPResponse.h"
+#include "Server/Session.h"
 #include "dispatch.h"
+#include "util/Defer.h"
 
 // Public
-void Server::listen_and_serve()
-{
-    start_listener();
-
-    size_t worker_count = std::thread::hardware_concurrency() - 1;
-
-    std::vector<std::jthread> thread_pool;
-    thread_pool.reserve(worker_count);
-
-    for (size_t i = 0; i < worker_count; ++i)
-    {
-        thread_pool.emplace_back([this]() { serve(); });
-    }
-    serve();
-}
-
-// Private
-void Server::start_listener()
+void Server::listen()
 {
     interrupt_fd = eventfd(0, EFD_NONBLOCK | EFD_SEMAPHORE);
     HANDLE_INT_RESULT(interrupt_fd);
 
     listener_socket = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
     HANDLE_INT_RESULT(listener_socket);
+
+    const int enabled = 1;
+    setsockopt(listener_socket, SOL_SOCKET, SO_REUSEADDR, &enabled, sizeof(enabled));
 
     int option = 0;
     HANDLE_INT_RESULT(setsockopt(listener_socket, IPPROTO_IPV6, IPV6_V6ONLY, &option, sizeof(option)));
@@ -55,7 +43,7 @@ void Server::start_listener()
 
     HANDLE_INT_RESULT(bind(listener_socket, reinterpret_cast<sockaddr *>(&address), sizeof(address)));
 
-    HANDLE_INT_RESULT(listen(listener_socket, SOMAXCONN));
+    HANDLE_INT_RESULT(::listen(listener_socket, SOMAXCONN));
 }
 
 void Server::serve()
@@ -83,9 +71,7 @@ void Server::serve()
             {
                 if (errno == EINTR)
                 {
-                    size_t interrupt = 1;
-                    HANDLE_INT_RESULT(write(interrupt_fd, &interrupt, sizeof(interrupt)));
-
+                    Session::shutdown();
                     return;
                 }
 
@@ -94,6 +80,7 @@ void Server::serve()
 
             if (incoming.data.fd == interrupt_fd)
             {
+                Session::shutdown();
                 return;
             }
             else if (incoming.data.fd == listener_socket)
@@ -186,6 +173,13 @@ void Server::serve()
     }
 }
 
+void Server::interrupt()
+{
+    size_t interrupt = 1;
+    HANDLE_INT_RESULT(write(interrupt_fd, &interrupt, sizeof(interrupt)));
+}
+
+// Private
 RTSPResponse Server::dispatch(const RTSPRequest &request)
 {
     std::string method = request.get_method();
@@ -194,6 +188,7 @@ RTSPResponse Server::dispatch(const RTSPRequest &request)
 
     if (h == Dispatch::rtsp.end())
     {
+        std::cout << "method = " << method << "\n";
         throw Exception(
             "Invalid method."); // TODO thrown Exceptions should be able to be used to write back error information
     }

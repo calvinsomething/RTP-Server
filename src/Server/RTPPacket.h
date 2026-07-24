@@ -9,7 +9,7 @@ class RTPPacket
     static constexpr uint32_t payload_type_video_bits = 32 << 16;
     static constexpr uint32_t marker_bit = 1 << 23;
 
-    static constexpr size_t max_size = 1400;
+    static constexpr size_t max_size = 1400; // MTU = 1500, minus space for various headers
 
   public:
     RTPPacket(int32_t ssrc, int32_t timestamp, int size, uint8_t *data, uint32_t offset, uint16_t sequence_number,

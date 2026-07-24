@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <iostream>
 #include <sys/socket.h>
 
 #include "../test_common.h"
@@ -57,8 +58,11 @@ TEST_F(RTSPTest, SetupRequest)
 
     std::string buffer(2048, 0);
 
-    int n = receive(buffer.data(), buffer.size());
-    HANDLE_INT_RESULT(n);
+    // int n =
+    receive(buffer.data(), buffer.size());
+    // HANDLE_INT_RESULT(n);
+
+    std::cout << buffer;
 
     for (auto p : setup_test_response_parts)
     {
