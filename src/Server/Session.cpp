@@ -4,19 +4,16 @@
 
 // Static
 //
-bool Session::is_live = true;
+std::atomic<bool> Session::is_live(true);
 
 RNG<uint64_t> Session::rng;
 
-// Must not lock Session::groups while Session::sessions is locked.
-Locker<std::vector<std::vector<std::shared_ptr<Session>> *>> Session::groups;
-Locker<std::unordered_map<std::string, std::shared_ptr<Session>>>
-    Session::sessions; // TODO ! Session * can dangle if group re-allocates... use std::shared_ptr and call unique()
-                       // before destroying...
+Locker<std::vector<Session::Group>> Session::groups;
+Locker<std::unordered_map<std::string, std::shared_ptr<Session>>> Session::sessions;
 
 void Session::shutdown()
 {
-    is_live = false;
+    is_live.store(false);
 }
 
 std::shared_ptr<Session> Session::get(const std::string &id)
@@ -36,7 +33,7 @@ std::shared_ptr<Session> Session::get(const std::string &id)
 
 std::shared_ptr<Session> Session::get()
 {
-    std::vector<std::shared_ptr<Session>> *dest = 0;
+    Group *dest = 0;
     std::string id;
 
     decltype(sessions)::type::iterator s;
@@ -44,75 +41,89 @@ std::shared_ptr<Session> Session::get()
     std::shared_ptr<Session> session = 0;
 
     groups.use([&](decltype(groups)::type &groups) {
-        for (auto g : groups)
+        for (auto &g : groups)
         {
-            if (!dest || g->size() < dest->size())
+            if (!dest || g.sessions.size() < dest->sessions.size())
             {
-                dest = g;
+                dest = &g;
             }
         }
-
-        sessions.use([&](decltype(sessions)::type &sessions) {
-            do
-            {
-                id = generate_id();
-                s = sessions.find(id);
-            } while (s != sessions.end());
-        });
-
-        dest->emplace_back(std::make_shared<Session>(Session(PrivateKey{}, id)));
-
-        session = dest->back();
     });
+
+    sessions.use([&](decltype(sessions)::type &sessions) {
+        do
+        {
+            id = generate_id();
+            s = sessions.find(id);
+        } while (s != sessions.end());
+
+        auto result = sessions.insert({id, std::make_shared<Session>(Session(PrivateKey{}, id))});
+        session = result.first->second;
+    });
+
+    dest->add_session(session);
 
     return session;
 }
 
-void Session::watch_streams()
+void Session::Group::watch_streams()
 {
-    std::vector<std::shared_ptr<Session>> these_sessions;
+    std::queue<std::vector<std::shared_ptr<Session>>::iterator> to_remove;
 
-    groups.use([&](decltype(groups)::type &v) { v.push_back(&these_sessions); });
-
-    std::vector<std::vector<std::shared_ptr<Session>>::iterator> to_remove;
-
-    while (is_live)
+    while (is_live.load())
     {
-        // TODO
-        // don't lock groups at all, make access exclusive to this thread/function
-        // create a synced "inbox" for adding new sessions that can be checked once per iteration of this loop
-        groups.use([&](decltype(groups)::type &v) {
-            for (auto it = these_sessions.begin(); it != these_sessions.end(); ++it)
-            {
-                if ((*it)->is_active.load())
-                {
-                    (*it)->tick();
-                }
-                else if ((*it).use_count() == 1) // use_count is not thread safe; however, if we do not make copies
-                                                 // after Session::is_active is false, this should be okay
-                {
-                    to_remove.push_back(it);
-                }
-            }
-
-            for (auto it = to_remove.rbegin(); it != to_remove.rend(); ++it)
-            {
-                these_sessions.erase(*it);
-            }
-        });
-    }
-
-    groups.use([&](decltype(groups)::type &v) {
-        auto it = v.begin();
-        for (; it != v.end(); ++it)
+        for (auto it = sessions.begin(); it != sessions.end(); ++it)
         {
-            if (*it == &these_sessions)
+            if ((*it)->is_active.load())
             {
-                break;
+                (*it)->tick();
+            }
+            else if ((*it).use_count() == 1) // use_count is not thread safe; however, if we do not make shared_ptr
+                                             // copies after Session::is_active is false, this should be okay
+            {
+                to_remove.push(it);
             }
         }
 
-        v.erase(it);
+        while (!to_remove.empty())
+        {
+            sessions.erase(to_remove.front());
+            to_remove.pop();
+        }
+
+        newly_added.use([&](decltype(newly_added)::type &v) {
+            while (!v.empty())
+            {
+                sessions.push_back(v.front());
+                v.pop();
+            }
+        });
+    }
+}
+
+Session::Group::Group(const Group &other)
+{
+    newly_added.use([&](decltype(newly_added)::type &v) {
+        const_cast<Group &>(other).newly_added.use([&](decltype(other.newly_added)::type &other) { v = other; });
+    });
+}
+
+Session::Group::Group(Group &&other) : newly_added(std::move(other.newly_added))
+{
+}
+
+void Session::watch_streams(unsigned worker_count)
+{
+    static std::vector<std::jthread> thread_pool;
+    thread_pool.reserve(worker_count);
+
+    groups = decltype(groups)(worker_count, Group{});
+
+    groups.use([&](decltype(groups)::type &v) {
+        for (auto &g : v)
+        {
+            thread_pool.emplace_back([&]() { g.watch_streams(); });
+        }
     });
 }
 
@@ -129,6 +140,13 @@ std::string Session::generate_id()
     }
 
     return std::string(reinterpret_cast<char *>(start), 8);
+}
+
+// Group
+//
+void Session::Group::add_session(std::shared_ptr<Session> session)
+{
+    newly_added.use([&](decltype(newly_added)::type &v) { v.push(session); });
 }
 
 // Non-Static

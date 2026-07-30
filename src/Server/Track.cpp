@@ -23,7 +23,7 @@ Track::Track(in6_addr client_addr, std::string_view uri, std::string_view transp
         throw Exception("Invalid track ID: ", id);
     }
 
-    stream.load(std::string(file->second.file_name).c_str(), file->second.media_type);
+    stream.load(file->second.file_name.data(), file->second.media_type);
 
     is_video = file->second.media_type == Stream::MediaType::AVMEDIA_TYPE_VIDEO;
 

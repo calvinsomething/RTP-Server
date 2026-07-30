@@ -6,6 +6,16 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_compile_options(-pie -Wall -pthread)
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+	add_compile_options(-O2)
+elseif(SANITIZE STREQUAL "Thread")
+	set(COMPILE_OPTIONS "-fsanitize=thread")
+else()
+	set(COMPILE_OPTIONS "-fsanitize=address,undefined")
+endif()
+
+add_compile_options(${COMPILE_OPTIONS})
+add_link_options(${COMPILE_OPTIONS})
 
 set(MEDIA_DIRECTORY ${CMAKE_BINARY_DIR}/media)
 add_compile_definitions("MEDIA_DIRECTORY=\"${MEDIA_DIRECTORY}\"")

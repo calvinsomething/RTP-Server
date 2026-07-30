@@ -5,17 +5,13 @@
 #include <memory>
 #include <queue>
 #include <string>
+#include <thread>
 #include <unordered_map>
 #include <vector>
 
 #include "Track.h"
 #include "util/Locker.h"
 #include "util/RNG.h"
-
-extern "C"
-{
-    void do_stream(int);
-}
 
 class Session
 {
@@ -24,11 +20,27 @@ class Session
     {
     };
 
+    class Group
+    {
+      public:
+        Group() = default;
+        Group(const Group &other);
+        Group(Group &&other);
+
+        void add_session(std::shared_ptr<Session> session);
+        void watch_streams();
+
+        std::vector<std::shared_ptr<Session>> sessions;
+
+      private:
+        Locker<std::queue<std::shared_ptr<Session>>> newly_added;
+    };
+
   public:
     static void init();
     static std::shared_ptr<Session> get();
     static std::shared_ptr<Session> get(const std::string &id);
-    static void watch_streams();
+    static void watch_streams(unsigned worker_count);
     static void shutdown();
 
     Session(PrivateKey key, const std::string &id);
@@ -45,14 +57,13 @@ class Session
     Track &emplace_track(in6_addr client_address, const std::string &uri, std::string_view transport_value);
 
   private:
-    static bool is_live;
-
+    static std::atomic<bool> is_live;
     static Locker<std::unordered_map<std::string, std::shared_ptr<Session>>> sessions;
     static std::string generate_id();
     static RNG<uint64_t> rng;
 
-    static Locker<std::vector<std::vector<std::shared_ptr<Session>> *>> groups;
-    std::vector<Session *> *session_group;
+    static Locker<std::vector<Session::Group>> groups;
+    Group *group;
 
     std::string id;
     std::atomic<int> reference_count;

@@ -7,6 +7,24 @@
 template <typename T> class Locker
 {
   public:
+    Locker() = default;
+    Locker(Locker &&other) noexcept : t(std::move(other.t))
+    {
+    }
+
+    template <typename... Args> Locker(Args &&...args) : t(std::forward<Args>(args)...)
+    {
+    }
+
+    Locker &operator=(Locker &&other)
+    {
+        std::scoped_lock lock(mutex, other.mutex);
+
+        std::swap(t, other.t);
+
+        return *this;
+    }
+
     using type = T;
 
     void use(std::function<void(T)> fn) = delete;

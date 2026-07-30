@@ -4,18 +4,18 @@
 #include <netinet/in.h>
 #include <queue>
 #include <sys/socket.h>
+#include <type_traits>
 #include <unistd.h>
 
 #include "../util/Locker.h"
-#include "../util/misc.h"
 #include "Exception.h"
 
-static Locker<std::queue<uint16_t>> even_ports;
+auto even_ports = new Locker<std::queue<uint16_t>>;
 struct InitPorts
 {
     InitPorts()
     {
-        even_ports.use([](decltype(even_ports)::type &ep) {
+        even_ports->use([](std::remove_reference_t<decltype(*even_ports)>::type &ep) {
             // 15 pairs of ports
             for (uint16_t port : {
                      5004,
@@ -49,7 +49,7 @@ uint16_t get_even_port()
 {
     uint16_t port = 0;
 
-    even_ports.use([&port](decltype(even_ports)::type &ep) {
+    even_ports->use([&port](std::remove_reference_t<decltype(*even_ports)>::type &ep) {
         if (!ep.empty())
         {
             port = ep.front();
@@ -62,7 +62,7 @@ uint16_t get_even_port()
 
 void insert_even_port(uint16_t port)
 {
-    even_ports.use([=](decltype(even_ports)::type &ep) { ep.push(port); });
+    even_ports->use([=](std::remove_reference_t<decltype(*even_ports)>::type &ep) { ep.push(port); });
 }
 
 // Socket

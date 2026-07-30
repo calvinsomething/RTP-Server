@@ -31,7 +31,7 @@ void Stream::load(const char *file_name, MediaType media_type)
         throw Exception(msg);
     }
 
-    AVPacket *packet = av_packet_alloc();
+    packet = av_packet_alloc();
     if (!packet)
     {
         throw Exception("Could not allocate packet");
@@ -57,7 +57,16 @@ Stream::Stream(Stream &&other)
 
 Stream::~Stream()
 {
-    av_packet_free(&packet);
+    if (ctx)
+    {
+        avformat_close_input(&ctx);
+        avformat_free_context(ctx);
+    }
+
+    if (packet)
+    {
+        av_packet_free(&packet);
+    }
 }
 
 void Stream::jump_to(float timestamp)

@@ -18,7 +18,7 @@ class RTPPacket
 
     uint32_t get_bytes_written();
 
-    uint8_t *data;
+    uint8_t *data = 0;
     uint32_t length = 0;
 
   private:

@@ -32,27 +32,23 @@ int main()
 {
     set_up_signal_handlers();
 
-    int session_workers = 2;
-    int server_workers = std::thread::hardware_concurrency() - 1 - session_workers;
+    unsigned session_workers = 2, server_workers = std::thread::hardware_concurrency() - 1 - session_workers;
 
     if (server_workers < 1)
     {
+        // minimum 2 threads total to listen/serve and watch sessions in parallel
         session_workers = 1;
         server_workers = 0;
     }
 
-    std::vector<std::jthread> thread_pool;
-    thread_pool.reserve(session_workers + server_workers);
+    Session::watch_streams(session_workers);
 
-    // Manage sessions
-    for (int i = 0; i < session_workers; ++i)
-    {
-        thread_pool.emplace_back([]() { Session::watch_streams(); });
-    }
+    std::vector<std::jthread> thread_pool;
+    thread_pool.reserve(server_workers);
 
     // Start server
     server.listen();
-    for (int i = 0; i < server_workers; ++i)
+    for (unsigned i = 0; i < server_workers; ++i)
     {
         thread_pool.emplace_back([&]() { server.serve(); });
     }
