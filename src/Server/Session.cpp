@@ -103,8 +103,6 @@ void Session::Group::watch_streams()
             }
         });
     }
-
-    std::osyncstream(std::cout) << "watch_streams exiting\n";
 }
 
 Session::Group::Group(const Group &other)

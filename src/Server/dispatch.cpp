@@ -158,8 +158,6 @@ RTSPResponse handle_play(const RTSPRequest &request)
 
     std::string range = request.get_header("range");
 
-    // TODO std::pair<NPT, NPT> play_range = parse_npt_play_range(range);
-
     std::pair<NPT, NPT> play_range;
 
     if (range.empty())
@@ -168,27 +166,9 @@ RTSPResponse handle_play(const RTSPRequest &request)
     }
     else
     {
-        size_t npt_index = range.find("npt=");
+        auto f_range = NPT::parse_range_header(range);
 
-        if (npt_index != std::string::npos)
-        {
-            range = range.substr(npt_index + 4);
-        }
-
-        auto parts = util::split(range, '-');
-
-        float begin;
-        auto result = std::from_chars(parts[0].cbegin(), parts[0].cend(), begin);
-        THROW_IF_FALSE((result.ec == std::errc{}), parts[0]);
-
-        float end = 0;
-        if (parts.size() > 1)
-        {
-            result = std::from_chars(parts[1].cbegin(), parts[1].cend(), end);
-            THROW_IF_FALSE((result.ec == std::errc{}), parts[1]);
-        }
-
-        play_range = session->play(begin, end);
+        play_range = session->play(f_range.first, f_range.second);
     }
 
     RTSPResponse response;

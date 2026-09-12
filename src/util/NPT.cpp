@@ -1,7 +1,6 @@
 #include "NPT.h"
 
 #include "Server/Exception.h"
-#include <iostream>
 
 #define DEC_1 10
 #define DEC_2 100
@@ -17,6 +16,38 @@
 // npt-hh       =   1*DIGIT     ; any positive number
 // npt-mm       =   1*2DIGIT    ; 0-59
 // npt-ss       =   1*2DIGIT    ; 0-59
+
+std::pair<float, float> NPT::parse_range_header(std::string header_value)
+{
+    size_t npt_index = header_value.find("npt=");
+
+    if (npt_index == std::string::npos)
+    {
+        return {};
+    }
+
+    auto range_str = header_value.substr(npt_index + 4);
+
+    auto parts = util::split(range_str, '-');
+
+    if (!parts.size())
+    {
+        return {};
+    }
+
+    std::pair<float, float> range;
+
+    auto result = std::from_chars(parts[0].cbegin(), parts[0].cend(), range.first);
+    THROW_IF_FALSE((result.ec == std::errc{}), parts[0]);
+
+    if (parts.size() > 1)
+    {
+        result = std::from_chars(parts[1].cbegin(), parts[1].cend(), range.second);
+        THROW_IF_FALSE((result.ec == std::errc{}), parts[1]);
+    }
+
+    return range;
+}
 
 NPT::NPT(float t) : t(t)
 {

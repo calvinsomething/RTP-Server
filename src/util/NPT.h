@@ -9,6 +9,7 @@ class NPT
         HHMMSS,
     };
 
+    static std::pair<float, float> parse_range_header(std::string header_value);
     static std::string format_range(const NPT &begin, const NPT &end);
 
     NPT(float t = 0);
