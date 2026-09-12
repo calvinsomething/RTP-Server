@@ -50,9 +50,12 @@ class Session
     Session(const Session &other) = delete;
     void teardown();
 
+    float get_npt();
+
     std::pair<float, float> play();
     std::pair<float, float> play(float npt_begin, float npt_end);
 
+    void pause();
     void pause(float npt);
 
     std::string get_id();

@@ -1,6 +1,5 @@
 #include "dispatch.h"
 
-#include <iostream>
 #include <optional>
 
 #include "Exception.h"
@@ -191,7 +190,24 @@ RTSPResponse handle_pause(const RTSPRequest &request)
     // RFC: If the Range header specifies a time outside
     // any currently pending PLAY requests, the error "457 Invalid Range" is
     // returned.
-    return RTSPResponse();
+
+    std::string session_id = request.get_header("session");
+
+    std::shared_ptr<Session> session = Session::get(session_id);
+
+    session->pause();
+
+    RTSPResponse response;
+
+    response.set_header("CSeq", request.get_header("cseq"));
+
+    response.set_header("Date", util::get_date_string(std::chrono::system_clock::now()));
+
+    response.set_status(RTSPResponse::StatusCode::OK);
+
+    response.marshal();
+
+    return response;
 }
 
 RTSPResponse handle_teardown(const RTSPRequest &request)

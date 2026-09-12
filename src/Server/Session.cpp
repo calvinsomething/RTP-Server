@@ -203,6 +203,19 @@ std::pair<float, float> Session::play(float npt_begin, float npt_end)
     return play_range;
 }
 
+// The PAUSE request may contain a Range header specifying when the stream or
+// presentation is to be halted. We refer to this point as the "pause point".
+//
+// The PAUSE request causes the stream delivery to be interrupted
+// (halted) temporarily. If the request URL names a stream, only
+// playback and recording of that stream is halted. For example, for
+// audio, this is equivalent to muting.
+//
+// A PAUSE request discards all queued PLAY requests. However, the pause
+// point in the media stream MUST be maintained. A subsequent PLAY
+// request without Range header resumes from the pause point.
+//
+// If the pause NPT comes before the current NPT, play stops immediately.
 void Session::pause(float npt)
 {
     is_playing.store(false);
@@ -211,6 +224,11 @@ void Session::pause(float npt)
     {
         t.set_play_time(npt);
     }
+}
+
+void Session::pause()
+{
+    is_playing.store(false);
 }
 
 void Session::tick()

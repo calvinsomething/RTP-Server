@@ -28,6 +28,10 @@ static inline const char play_test_message_fmt[] = "PLAY rtsp://audio.example.co
                                                    "Session: %s\n"
                                                    "Range: npt=10-15\n\n";
 
+static inline const char pause_test_message_fmt[] = "PAUSE rtsp://audio.example.com/audio RTSP/1.0\n"
+                                                    "CSeq: 302\n"
+                                                    "Session: %s\n\n";
+
 // Responses
 static inline const char *options_test_response_parts[] = {
     "RTSP/1.0 200 OK",
@@ -52,4 +56,10 @@ static inline const char *play_test_response_parts[] = {
     "CSeq: 302\n",
     "Date: ",
     "Range: npt=10-15\n",
+};
+
+static inline const char *pause_test_response_parts[] = {
+    "RTSP/1.0 200 OK\n",
+    "CSeq: 302\n",
+    "Date: ",
 };

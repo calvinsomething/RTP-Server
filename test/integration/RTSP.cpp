@@ -121,3 +121,44 @@ TEST_F(RTSPTest, PlayRequest)
         ASSERT_NE(response.find(p), std::string::npos);
     }
 }
+
+TEST_F(RTSPTest, PauseRequest)
+{
+    std::string response = send_setup_request(this, &std::remove_reference_t<decltype(*this)>::get_fd,
+                                              &std::remove_reference_t<decltype(*this)>::receive);
+
+    size_t session_index = response.find("Session: ");
+
+    EXPECT_NE(session_index, std::string::npos);
+
+    session_index += sizeof("Session: ") - 1;
+
+    size_t session_end = response.find('\n', session_index);
+
+    EXPECT_NE(session_end, std::string::npos);
+
+    size_t session_id_len = session_end - session_index;
+
+    auto session_id = response.substr(session_index, session_id_len);
+
+    size_t pause_message_size =
+        sizeof(pause_test_message_fmt) - 2 + session_id_len; // size of test message fmt + session ID
+
+    char *pause_message = reinterpret_cast<char *>(alloca(pause_message_size));
+
+    memset(pause_message, 0, pause_message_size);
+
+    std::sprintf(pause_message, pause_test_message_fmt, session_id.c_str());
+
+    HANDLE_INT_RESULT(send(get_fd(), pause_message, pause_message_size - 1, 0));
+
+    response.replace(0, response.size(), response.size(), 0);
+
+    int n = receive(response.data(), response.size());
+    HANDLE_INT_RESULT(n);
+
+    for (auto p : pause_test_response_parts)
+    {
+        ASSERT_NE(response.find(p), std::string::npos);
+    }
+}
