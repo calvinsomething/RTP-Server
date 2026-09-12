@@ -3,6 +3,9 @@
 #include <ctime>
 #include <iomanip>
 
+namespace util
+{
+
 std::string get_date_string(std::chrono::time_point<std::chrono::system_clock> timestamp)
 {
     auto t = std::chrono::system_clock::to_time_t(timestamp);
@@ -33,3 +36,5 @@ std::vector<std::string_view> split(std::string_view str, char c)
 
     return output;
 }
+
+}; // namespace util

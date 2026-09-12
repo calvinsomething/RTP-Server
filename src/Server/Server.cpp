@@ -1,6 +1,7 @@
 #include "Server.h"
 
 #include <asm-generic/socket.h>
+#include <cerrno>
 #include <netinet/in.h>
 #include <netinet/ip.h>
 #include <netinet/tcp.h>
@@ -13,6 +14,7 @@
 #include <cstring>
 #include <iostream>
 #include <syncstream>
+#include <thread>
 #include <utility>
 
 #include "Exception.h"
@@ -31,7 +33,7 @@ void Server::listen()
     HANDLE_INT_RESULT(listener_socket);
 
     const int enabled = 1;
-    setsockopt(listener_socket, SOL_SOCKET, SO_REUSEADDR, &enabled, sizeof(enabled));
+    HANDLE_INT_RESULT(setsockopt(listener_socket, SOL_SOCKET, SO_REUSEADDR, &enabled, sizeof(enabled)));
 
     int option = 0;
     HANDLE_INT_RESULT(setsockopt(listener_socket, IPPROTO_IPV6, IPV6_V6ONLY, &option, sizeof(option)));
@@ -44,22 +46,24 @@ void Server::listen()
     HANDLE_INT_RESULT(bind(listener_socket, reinterpret_cast<sockaddr *>(&address), sizeof(address)));
 
     HANDLE_INT_RESULT(::listen(listener_socket, SOMAXCONN));
-}
 
-void Server::serve()
-{
-    int epoll_fd = epoll_create1(0);
+    epoll_fd = epoll_create1(0);
     HANDLE_INT_RESULT(epoll_fd);
 
-    epoll_event event_config{}, incoming{};
+    epoll_event event_config{};
 
     event_config.events = EPOLLIN;
     event_config.data.fd = interrupt_fd;
     HANDLE_INT_RESULT(epoll_ctl(epoll_fd, EPOLL_CTL_ADD, interrupt_fd, &event_config));
 
-    event_config.events = EPOLLIN | EPOLLEXCLUSIVE;
+    event_config.events = EPOLLIN | EPOLLET;
     event_config.data.fd = listener_socket;
     HANDLE_INT_RESULT(epoll_ctl(epoll_fd, EPOLL_CTL_ADD, listener_socket, &event_config));
+}
+
+void Server::serve()
+{
+    epoll_event incoming{};
 
     while (1)
     {
@@ -80,7 +84,6 @@ void Server::serve()
 
             if (incoming.data.fd == interrupt_fd)
             {
-                Session::shutdown();
                 return;
             }
             else if (incoming.data.fd == listener_socket)
@@ -90,22 +93,41 @@ void Server::serve()
 
                 int connection =
                     accept(listener_socket, reinterpret_cast<sockaddr *>(&connection_addr), &conn_addr_size);
-                HANDLE_INT_RESULT(connection);
+                if (connection == -1)
+                {
+                    int eno = errno;
+                    if (eno == EAGAIN)
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        std::osyncstream(std::cout)
+                            << "Thread [" << std::this_thread::get_id() << "] exiting due to errno " << eno << "\n";
+                        return;
+                    }
+                }
 
                 epoll_event event_config{};
                 event_config.events = EPOLLIN | EPOLLONESHOT;
                 event_config.data.fd = connection;
                 HANDLE_INT_RESULT(epoll_ctl(epoll_fd, EPOLL_CTL_ADD, connection, &event_config));
 
-                connections.insert_or_assign(
-                    connection,
-                    Connection(connection, connection_addr)); // TODO should be an atomic/locking map, also have to deal
-                                                              // with destroying connections when the FD closes
+                connections.write([=](decltype(connections)::type &connections) {
+                    connections.insert_or_assign(connection, Connection(connection, connection_addr));
+                });
             }
             else
             {
-                auto c = connections.find(incoming.data.fd);
-                if (c == connections.end())
+                std::unordered_map<int, Connection>::iterator c;
+                bool found;
+
+                connections.read([&](decltype(connections)::type &connections) {
+                    c = connections.find(incoming.data.fd);
+                    found = c != connections.end();
+                });
+
+                if (!found)
                 {
                     char message[128] = {"Connection not in map (fd = "};
                     size_t n = std::strlen(message);
@@ -128,14 +150,17 @@ void Server::serve()
                 char b[4096] = {};
 
                 int n = recv(incoming.data.fd, b, sizeof(b), 0);
-                HANDLE_INT_RESULT(n); // TODO throw an exception instead of using handler that exits
+                HANDLE_INT_RESULT(n); // TODO throw an exception instead of exiting
 
                 if (!n)
                 {
-                    // connection was closed
+                    // connection was shutdown/closed
                     HANDLE_INT_RESULT(epoll_ctl(epoll_fd, EPOLL_CTL_DEL, incoming.data.fd, nullptr));
 
-                    connections.erase(incoming.data.fd);
+                    // TODO should not assume client closed connection -- set Connection::expires to now, then move this
+                    // connection removal to expired connection cleanup
+                    connections.write(
+                        [&](decltype(connections)::type &connections) { connections.erase(incoming.data.fd); });
 
                     continue;
                 }
@@ -152,14 +177,12 @@ void Server::serve()
 
                     c->second.clear_message();
                 }
-                else
-                {
-                    // re-arm FD
-                    epoll_event event_config{};
-                    event_config.events = EPOLLIN | EPOLLONESHOT;
-                    event_config.data.fd = incoming.data.fd;
-                    HANDLE_INT_RESULT(epoll_ctl(epoll_fd, EPOLL_CTL_MOD, event_config.data.fd, &event_config));
-                }
+
+                // re-arm FD
+                epoll_event event_config{};
+                event_config.events = EPOLLIN | EPOLLONESHOT;
+                event_config.data.fd = incoming.data.fd;
+                HANDLE_INT_RESULT(epoll_ctl(epoll_fd, EPOLL_CTL_MOD, event_config.data.fd, &event_config));
             }
         }
         catch (std::exception &e)

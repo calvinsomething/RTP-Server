@@ -54,7 +54,8 @@ set(SERVER_FILES
 set(UTIL_FILES
 	misc.cpp
 	Defer.cpp
-	RingBuffer.cpp)
+	RingBuffer.cpp
+	NPT.cpp)
 
 foreach(lib Server;util)
 	add_library(${lib})

@@ -15,6 +15,7 @@ extern "C"
     void interrupt_handler(int signal_number)
     {
         server.interrupt();
+        Session::shutdown();
     }
 }
 

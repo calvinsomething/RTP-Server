@@ -20,7 +20,7 @@ Track::Track(in6_addr client_addr, std::string_view uri, std::string_view transp
     auto file = data_by_id.find(id);
     if (file == data_by_id.end())
     {
-        throw Exception("Invalid track ID: ", id);
+        throw Exception(Exception::Prefix{"Invalid track ID: "}, id);
     }
 
     stream.load(file->second.file_name.data(), file->second.media_type);
@@ -37,7 +37,7 @@ std::string_view Track::get_id_from_uri(std::string_view uri)
     size_t i = uri.find(key_str);
     if (i == std::string::npos || i + key_str.size() == uri.size())
     {
-        throw Exception("Invalid URI: ", uri);
+        throw Exception(Exception::Prefix{"Invalid URI: "}, uri);
     }
 
     return std::string_view(uri.begin() + i + key_str.size(), uri.end());
@@ -91,12 +91,23 @@ bool Track::send_frames()
     return did_send;
 }
 
-void Track::set_play_time(float npt)
+float Track::get_play_time()
 {
-    play_time = npt;
+    return play_time;
 }
 
-void Track::set_play_range_end(float npt)
+float Track::set_play_time(float npt)
+{
+    // TODO clamp npt to valid track play range
+
+    play_time = npt;
+
+    return play_time;
+}
+
+float Track::set_play_range_end(float npt)
 {
     play_range_end = npt;
+
+    return play_range_end;
 }

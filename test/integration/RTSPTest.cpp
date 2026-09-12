@@ -42,9 +42,9 @@ RTSPTest::RTSPTest()
 
 RTSPTest::~RTSPTest()
 {
-    HANDLE_INT_RESULT(kill(child_pid, SIGINT));
-
     close(fd);
+
+    HANDLE_INT_RESULT(kill(child_pid, SIGINT));
 
     int status = 0;
     HANDLE_INT_RESULT(waitpid(child_pid, &status, 0));

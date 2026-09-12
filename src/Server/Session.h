@@ -5,13 +5,15 @@
 #include <memory>
 #include <queue>
 #include <string>
-#include <thread>
 #include <unordered_map>
 #include <vector>
 
 #include "Track.h"
 #include "util/Locker.h"
 #include "util/RNG.h"
+
+// RFC: The time parameter may be used to aid in synchronization
+// of streams obtained from different sources.
 
 class Session
 {
@@ -48,8 +50,9 @@ class Session
     Session(const Session &other) = delete;
     void teardown();
 
-    void play();
-    void play(float npt_begin, float npt_end);
+    std::pair<float, float> play();
+    std::pair<float, float> play(float npt_begin, float npt_end);
+
     void pause(float npt);
 
     std::string get_id();
@@ -72,12 +75,14 @@ class Session
 
     std::queue<std::pair<float, float>> play_ranges_queue;
 
+    // TODO Session: header's timeout= parameter (default 60s per RFC 2326 if the client doesn't negotiate otherwise)
+    // should match Connection::expires
     std::chrono::time_point<std::chrono::steady_clock> expires_at;
 
+    // play_range.second == 0 -> undefined end value
     std::pair<float, float> play_range = {};
 
-    std::atomic<bool> is_active = 1;
-    bool is_playing = 0;
+    std::atomic<bool> is_active = 1, is_playing = 0;
 
     // methods
     void tick();

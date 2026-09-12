@@ -12,7 +12,8 @@
         if (result < 0)                                                                                                \
         {                                                                                                              \
             char buf[512] = {};                                                                                        \
-            throw Exception(__FILE__ ":" TO_STR(__LINE__) ": ", av_make_error_string(buf, sizeof(buf), result));       \
+            throw Exception(Exception::Prefix{__FILE__ ":" TO_STR(__LINE__) ": "},                                     \
+                            av_make_error_string(buf, sizeof(buf), result));                                           \
         }                                                                                                              \
     }
 
@@ -20,7 +21,7 @@ void Stream::load(const char *file_name, MediaType media_type)
 {
     if (avformat_open_input(&ctx, file_name, nullptr, nullptr) < 0)
     {
-        throw Exception("Could not open source file: ", file_name);
+        throw Exception("Could not open source file: %s", file_name);
     }
 
     stream_index = av_find_best_stream(ctx, media_type, -1, -1, nullptr, 0);

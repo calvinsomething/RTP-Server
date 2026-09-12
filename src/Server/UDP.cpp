@@ -122,7 +122,7 @@ void Socket::connect(in6_addr client_addr)
 {
     if (::connect(socket_fd, reinterpret_cast<sockaddr *>(&client_addr), sizeof(client_addr)) < 0)
     {
-        throw Exception("Failed to connect UDP socket: ", strerror(errno));
+        throw Exception(Exception::Prefix{"Failed to connect UDP socket: "}, strerror(errno));
     }
 }
 
@@ -130,7 +130,7 @@ void Socket::send(uint8_t *data, size_t size)
 {
     if (::send(socket_fd, data, size, 0) < 0)
     {
-        throw Exception("Failed to connect UDP socket: ", strerror(errno));
+        throw Exception(Exception::Prefix{"Failed to connect UDP socket: "}, strerror(errno));
     }
 }
 

@@ -12,6 +12,7 @@
 
 #include "RTSPRequest.h"
 #include "RTSPResponse.h"
+#include "util/Locker.h"
 
 // 554 is default, but would require root user priveleges
 inline constexpr unsigned RTSP_PORT = 8554;
@@ -71,13 +72,13 @@ class Server
 
   private:
     int listener_socket = 0, rtsp_socket = 0, rtp_socket = 0, rtcp_socket = 0;
-    int interrupt_fd = 0;
+    int interrupt_fd = 0, epoll_fd = 0;
 
     RTSPResponse dispatch(const RTSPRequest &request);
 
     int get_expected_message_length(int connection, char *b, size_t n);
 
-    std::unordered_map<int, Connection> connections;
+    RWLocker<std::unordered_map<int, Connection>> connections;
 };
 
 // rtsp_socket = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);

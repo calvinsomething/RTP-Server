@@ -19,9 +19,9 @@ class Track
 
     bool send_frames();
 
-    void set_play_time(float npt);
-
-    void set_play_range_end(float npt);
+    float get_play_time();
+    float set_play_time(float npt);
+    float set_play_range_end(float npt);
 
   private:
     struct Data

@@ -6,23 +6,35 @@
 
 #include "../util/RingBuffer.h"
 
-#ifndef THROW_IF_FALSE
+#ifdef THROW_IF_FALSE
+#undef THROW_IF_FALSE
+#endif
 #define THROW_IF_FALSE(condition, msg)                                                                                 \
     {                                                                                                                  \
         if (!condition)                                                                                                \
         {                                                                                                              \
-            throw Exception(__FILE__ ":" TO_STR(__LINE__) ": ", msg);                                                  \
+            throw Exception(Exception::Prefix{__FILE__ ":" TO_STR(__LINE__) ": "}, msg);                               \
         }                                                                                                              \
     }
-#endif
 
 class Exception : public std::exception
 {
   public:
+    struct Prefix
+    {
+        const char *value;
+    };
+
+    template <typename... Args> Exception(const char *fmt, const Args... args)
+    {
+        std::lock_guard<std::mutex> lock(buffer_mutex);
+        message = buffer.write(fmt, args...);
+    }
+
     Exception(const char *msg);
     Exception(std::string_view msg);
-    Exception(const char *prefix, const char *msg);
-    Exception(const char *prefix, std::string_view sv);
+    Exception(Prefix prefix, const char *msg);
+    Exception(Prefix prefix, std::string_view sv);
 
     const char *what() const noexcept override;
 
@@ -32,5 +44,5 @@ class Exception : public std::exception
 
     const char *message = 0;
 
-    void store_prefixed_msg(const char *prefix, const char *msg);
+    void store_prefixed_msg(Prefix prefix, const char *msg);
 };

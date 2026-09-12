@@ -1,5 +1,9 @@
 #include "Session.h"
 
+#include <iostream>
+#include <syncstream>
+#include <thread>
+
 #include "Exception.h"
 
 // Static
@@ -99,6 +103,8 @@ void Session::Group::watch_streams()
             }
         });
     }
+
+    std::osyncstream(std::cout) << "watch_streams exiting\n";
 }
 
 Session::Group::Group(const Group &other)
@@ -175,29 +181,33 @@ Track &Session::emplace_track(in6_addr client_address, const std::string &uri, s
     return tracks.emplace_back(client_address, uri, transport_value);
 }
 
-void Session::play()
+std::pair<float, float> Session::play()
 {
-    is_playing = true;
+    is_playing.store(true);
+
+    return play_range;
 }
 
-void Session::play(float npt_begin, float npt_end)
+std::pair<float, float> Session::play(float npt_begin, float npt_end)
 {
-    is_playing = true;
+    is_playing.store(true);
 
-    play_range = {npt_begin, npt_end};
-
-    if (npt_end)
+    for (auto &t : tracks)
     {
-        for (auto &t : tracks)
+        play_range.first = t.set_play_time(npt_begin);
+
+        if (npt_end)
         {
-            t.set_play_range_end(npt_end);
+            play_range.second = t.set_play_range_end(npt_end);
         }
     }
+
+    return play_range;
 }
 
 void Session::pause(float npt)
 {
-    is_playing = false;
+    is_playing.store(false);
 
     for (auto &t : tracks)
     {
@@ -207,7 +217,7 @@ void Session::pause(float npt)
 
 void Session::tick()
 {
-    if (is_playing)
+    if (is_playing.load())
     {
         bool any_sent = false;
         for (auto &t : tracks)

@@ -46,3 +46,10 @@ static inline const char *setup_test_response_parts[] = {
     "Session: ",
     "Transport: RTP/AVP;unicast;client_port=4588-4589;server_port=5004-5005\n",
 };
+
+static inline const char *play_test_response_parts[] = {
+    "RTSP/1.0 200 OK\n",
+    "CSeq: 302\n",
+    "Date: ",
+    "Range: npt=10-15\n",
+};

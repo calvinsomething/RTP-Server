@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cctype>
 #include <set>
+#include <string>
 
 #include "../util/misc.h"
 #include "Exception.h"
@@ -28,7 +29,7 @@ RTPTransport::RTPTransport(in6_addr client_addr, std::string_view request_header
     std::string *parts_dst[] = {&protocol, &profile, &lower_transport};
     std::string_view specifier{lower_case_header_value.begin(), lower_case_header_value.begin() + i};
 
-    auto parts_src = split(specifier, '/');
+    auto parts_src = util::split(specifier, '/');
     for (size_t i = 0; i < parts_src.size(); ++i)
     {
         parts_dst[i]->assign(parts_src[i]);
@@ -49,7 +50,7 @@ RTPTransport::RTPTransport(in6_addr client_addr, std::string_view request_header
         throw Exception("Invalid lower-transport.");
     }
 
-    auto parameters = split({lower_case_header_value.begin() + i + 1, lower_case_header_value.end()}, ';');
+    auto parameters = util::split({lower_case_header_value.begin() + i + 1, lower_case_header_value.end()}, ';');
     for (auto parameter : parameters)
     {
         set_parameter(parameter);
@@ -99,7 +100,7 @@ void RTPTransport::set_parameter(std::string_view parameter)
         }
         else if (key == "mode" && value != "play")
         {
-            throw Exception("Unsupported transport mode: ", value);
+            throw Exception(Exception::Prefix{"Unsupported transport mode: "}, value);
         }
     }
     else if (parameter == "unicast")
@@ -120,14 +121,15 @@ void RTPTransport::set_client_ports(std::string_view value)
     auto result = std::from_chars(value.begin(), value.begin() + i, client_ports.first);
     if (result.ec != std::errc{})
     {
-        throw Exception("Invalid RTP client_port: ", result.ptr);
+        throw Exception("Invalid RTP client_port: %s", result.ptr);
     }
     if (i != value.size())
     {
-        auto result = std::from_chars(value.begin() + i + 1, value.end(), client_ports.second);
+        auto begin = value.begin() + i + 1;
+        auto result = std::from_chars(begin, value.end(), client_ports.second);
         if (result.ec != std::errc{} || client_ports.second != client_ports.first + 1)
         {
-            throw Exception("Invalid RTCP client_port: ", result.ptr);
+            throw Exception(Exception::Prefix{"Invalid RTCP client_port: "}, std::string_view(begin, value.end()));
         }
     }
 
