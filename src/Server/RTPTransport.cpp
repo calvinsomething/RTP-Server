@@ -121,7 +121,7 @@ void RTPTransport::set_client_ports(std::string_view value)
     auto result = std::from_chars(value.begin(), value.begin() + i, client_ports.first);
     if (result.ec != std::errc{})
     {
-        throw Exception("Invalid RTP client_port: %s", result.ptr);
+        throw Exception("Invalid RTP client_ports: %s", value);
     }
     if (i != value.size())
     {

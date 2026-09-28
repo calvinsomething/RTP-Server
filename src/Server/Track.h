@@ -2,8 +2,6 @@
 
 #include <netinet/in.h>
 
-#include <unordered_map>
-
 #include "../util/RNG.h"
 #include "RTPTransport.h"
 #include "Stream.h"
@@ -24,19 +22,11 @@ class Track
     float set_play_range_end(float npt);
 
   private:
-    struct Data
-    {
-        std::string_view file_name;
-        Stream::MediaType media_type;
-    };
-
     bool is_video = 0;
     uint16_t sequence_number = 0;
     uint32_t ssrc = 0;
 
     static RNG<uint32_t> rng;
-
-    static std::unordered_map<std::string_view, Track::Data> data_by_id;
 
     std::string_view get_id_from_uri(std::string_view uri);
 

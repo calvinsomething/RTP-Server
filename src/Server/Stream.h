@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 extern "C"
 {
 #include <libavformat/avformat.h>
@@ -26,12 +28,15 @@ class Stream
     void operator=(Stream &other) = delete;
     void operator=(Stream &&other) = delete;
 
+    void load(const char *file_name);
     void load(const char *file_name, MediaType media_type);
 
     void jump_to(float timestamp);
     float sample_rate_to_npt(int64_t timestamp);
 
     Packet read_frame();
+
+    std::string get_sdp();
 
   private:
     AVFormatContext *ctx = 0;

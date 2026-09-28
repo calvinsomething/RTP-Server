@@ -42,11 +42,12 @@ set(SERVER_FILES
 	dispatch.cpp
 	Connection.cpp
 	Exception.cpp
+	Media.cpp
 	RTSPRequest.cpp
 	RTSPResponse.cpp
-	Session.cpp
 	RTPPacket.cpp
 	RTPTransport.cpp
+	Session.cpp
 	Stream.cpp
 	Track.cpp
 	UDP.cpp)

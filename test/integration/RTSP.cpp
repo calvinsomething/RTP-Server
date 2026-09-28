@@ -1,7 +1,6 @@
-#include <cstdio>
-#include <gtest/gtest.h>
-
 #include <sys/socket.h>
+
+#include <cstdio>
 #include <type_traits>
 
 #include "../test_common.h"

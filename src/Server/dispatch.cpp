@@ -5,6 +5,7 @@
 #include "Exception.h"
 #include "RTSPRequest.h"
 #include "RTSPResponse.h"
+#include "Server/Media.h"
 #include "Session.h"
 #include "util/NPT.h"
 #include "util/misc.h"
@@ -63,20 +64,45 @@ namespace Dispatch
 {
 RTSPResponse handle_describe(const RTSPRequest &request)
 {
+    // If URI does not point to presentation group, return 404
+
     RTSPResponse response;
 
-    response.body = HARD_CODED_SDP;
+    std::string uri = request.get_uri();
 
-    response.set_header("CSeq", request.get_header("cseq"));
+    size_t endpoint_index = util::find_nth_of(uri, '/', 3), basename_index = endpoint_index + 1;
 
-    response.set_header("Date", util::get_date_string(std::chrono::system_clock::now()));
+    if (endpoint_index != std::string::npos && uri.size() > basename_index)
+    {
+        if (request.get_header("accept").find("application/sdp") == std::string::npos)
+        {
+            response.set_status(RTSPResponse::StatusCode::NotAcceptable);
 
-    response.set_header("Content-Type", "application/sdp");
+            goto RESPOND;
+        }
 
-    response.set_header("Content-Length", util::int_to_string(response.body.size()));
+        auto media = Media::by_basename.find(uri.substr(basename_index));
+        if (media != Media::by_basename.end())
+        {
+            response.body = media->second->sdp;
 
-    response.set_status(RTSPResponse::StatusCode::OK);
+            response.set_header("CSeq", request.get_header("cseq"));
 
+            response.set_header("Date", util::get_date_string(std::chrono::system_clock::now()));
+
+            response.set_header("Content-Type", "application/sdp");
+
+            response.set_header("Content-Length", util::int_to_string(response.body.size()));
+
+            response.set_status(RTSPResponse::StatusCode::OK);
+
+            goto RESPOND;
+        }
+    }
+
+    response.set_status(RTSPResponse::StatusCode::NotFound);
+
+RESPOND:
     response.marshal();
 
     return response;

@@ -4,35 +4,48 @@
 
 #include "Exception.h"
 #include "RTPPacket.h"
+#include "Server/Media.h"
 #include "Stream.h"
-#include "media_files.h"
 
-std::unordered_map<std::string_view, Track::Data> Track::data_by_id{
-    {"0", {MediaFiles::sample, Stream::MediaType::AVMEDIA_TYPE_VIDEO}},
-    {"1", {MediaFiles::sample, Stream::MediaType::AVMEDIA_TYPE_AUDIO}},
-};
+/*
+// TODO
+// use Stream::load without a media type to get the SDP and store the media types
+// m=video 0 RTP/AVP 96
+// b=AS:6650
+// a=rtpmap:96 H264/90000
+// a=fmtp:96 packetization-mode=1; sprop-parameter-sets=Z2QAKqzZQHgCJ+WEAAADAAQAAAMB4Dxgxlg=,aOvhcsiw;
+profile-level-id=64002A
+// a=control:streamid=0
+// m=audio 0 RTP/AVP 97
+// b=AS:128
+// a=rtpmap:97 MPEG4-GENERIC/48000/2
+// a=fmtp:97 profile-level-id=1;mode=AAC-hbr;sizelength=13;indexlength=3;indexdeltalength=3; config=119056E500
+// a=control:streamid=1
+*/
 
 Track::Track(in6_addr client_addr, std::string_view uri, std::string_view transport_header_value)
     : transport(client_addr, transport_header_value)
 {
     std::string_view id = get_id_from_uri(uri);
 
-    auto file = data_by_id.find(id);
-    if (file == data_by_id.end())
+    auto media = Media::by_basename.find(id);
+    if (media == Media::by_basename.end())
     {
         throw Exception(Exception::Prefix{"Invalid track ID: "}, id);
     }
 
-    stream.load(file->second.file_name.data(), file->second.media_type);
+    Stream::MediaType stream_type = media->second->stream_type_by_control_id[uri];
 
-    is_video = file->second.media_type == Stream::MediaType::AVMEDIA_TYPE_VIDEO;
+    stream.load(media->second->file_name.c_str(), stream_type);
+
+    is_video = stream_type == Stream::MediaType::AVMEDIA_TYPE_VIDEO;
 
     ssrc = rng.get();
 }
 
 std::string_view Track::get_id_from_uri(std::string_view uri)
 {
-    std::string_view key_str("trackID=");
+    std::string_view key_str("streamid="); // TODO don't do this, use the whole control id
 
     size_t i = uri.find(key_str);
     if (i == std::string::npos || i + key_str.size() == uri.size())

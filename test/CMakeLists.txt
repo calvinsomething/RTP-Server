@@ -23,6 +23,9 @@ add_executable(${TARGET_NAME}
 )
 
 target_link_libraries(${TARGET_NAME}
+	avformat
+	avcodec
+	avutil
 	GTest::gtest_main
 	Server
 	util)

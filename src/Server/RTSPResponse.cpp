@@ -51,13 +51,20 @@ void RTSPResponse::set_header(const std::string &key, const std::string &value)
 
 std::string_view RTSPResponse::get_status_string(StatusCode sc)
 {
-    switch (sc)
+    static std::unordered_map<StatusCode, std::string_view> status_strings{
+        {StatusCode::OK, "200 OK"},
+        {StatusCode::NotFound, "404 Not Found"},
+        {StatusCode::NotAcceptable, "406 Not Acceptable"},
+    };
+
+    auto s = status_strings.find(sc);
+
+    if (s == status_strings.end())
     {
-    case StatusCode::OK:
-        return "200 OK";
-    default:
         throw Exception("Invalid status code.");
     }
+
+    return s->second;
 }
 
 void RTSPResponse::set_status(StatusCode sc)

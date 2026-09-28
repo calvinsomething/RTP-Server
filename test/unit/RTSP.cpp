@@ -4,6 +4,7 @@
 #include "Server/Exception.h"
 #include "Server/RTPTransport.h"
 #include "Server/RTSPRequest.h"
+#include "Server/Stream.h"
 
 TEST(RTSPRequestTest, ParseRequestLine)
 {
@@ -42,4 +43,13 @@ TEST(RTSPRequestTest, RequestException)
 TEST(RTPTransportTest, RTPTransport)
 {
     RTPTransport transport{in6_addr{}, "RTP/AVP;unicast;client_port=4588-4589"};
+}
+
+TEST(CreateSDPTest, CreateSDP)
+{
+    Stream s;
+    s.load(MEDIA_DIRECTORY "/sample.mp4", Stream::MediaType::AVMEDIA_TYPE_VIDEO);
+
+    std::string sdp = s.get_sdp();
+    std::cout << sdp;
 }

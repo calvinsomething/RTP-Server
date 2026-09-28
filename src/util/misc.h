@@ -48,4 +48,6 @@ std::string get_date_string(std::chrono::time_point<std::chrono::system_clock> t
 
 std::vector<std::string_view> split(std::string_view str, char c);
 
+size_t find_nth_of(std::string_view, char, size_t);
+
 }; // namespace util

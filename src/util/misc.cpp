@@ -37,4 +37,31 @@ std::vector<std::string_view> split(std::string_view str, char c)
     return output;
 }
 
+size_t find_nth_of(std::string_view s, char c, size_t n)
+{
+    if (!n)
+    {
+        return std::string::npos;
+    }
+
+    size_t remaining = n, i = 0;
+
+    for (char sc : s)
+    {
+        if (sc == c)
+        {
+            if (remaining == 1)
+            {
+                return i;
+            }
+
+            --remaining;
+        }
+
+        ++i;
+    }
+
+    return remaining ? std::string::npos : i;
+}
+
 }; // namespace util
