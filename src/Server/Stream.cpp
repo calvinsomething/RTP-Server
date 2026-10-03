@@ -2,7 +2,6 @@
 
 #include "Exception.h"
 #include "util/misc.h"
-#include <iostream>
 
 extern "C"
 {

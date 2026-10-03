@@ -12,6 +12,8 @@ class RTSPResponse
 
         NotFound = 404,
         NotAcceptable = 406,
+        AggregateOperationNotAllowed = 459,
+        OnlyAggregateOperationAllowed = 460,
     };
 
     std::string body;

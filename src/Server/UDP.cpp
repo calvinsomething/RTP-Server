@@ -97,7 +97,7 @@ bool Socket::bind(uint16_t port)
 {
     reset_port();
 
-    socket_fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    socket_fd = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
     if (socket_fd < 0)
     {
         throw Exception(strerror(errno));
@@ -106,7 +106,7 @@ bool Socket::bind(uint16_t port)
     sockaddr_in6 address{};
     address.sin6_addr = in6addr_any;
     address.sin6_port = port;
-    address.sin6_family = AF_INET;
+    address.sin6_family = AF_INET6;
 
     if (::bind(socket_fd, reinterpret_cast<sockaddr *>(&address), sizeof(address)) < 0)
     {
@@ -118,7 +118,7 @@ bool Socket::bind(uint16_t port)
     return true;
 }
 
-void Socket::connect(in6_addr client_addr)
+void Socket::connect(sockaddr_in6 client_addr)
 {
     if (::connect(socket_fd, reinterpret_cast<sockaddr *>(&client_addr), sizeof(client_addr)) < 0)
     {
@@ -130,7 +130,7 @@ void Socket::send(uint8_t *data, size_t size)
 {
     if (::send(socket_fd, data, size, 0) < 0)
     {
-        throw Exception(Exception::Prefix{"Failed to connect UDP socket: "}, strerror(errno));
+        throw Exception(Exception::Prefix{"Failed to send on UDP socket: "}, strerror(errno));
     }
 }
 

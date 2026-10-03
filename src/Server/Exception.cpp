@@ -18,18 +18,18 @@ Exception::Exception(std::string_view msg)
 
 Exception::Exception(Prefix prefix, const char *msg)
 {
-    store_prefixed_msg(prefix, msg);
+    store_prefixed_msg(prefix, msg, std::strlen(msg));
 }
 
 Exception::Exception(Prefix prefix, std::string_view msg)
 {
-    store_prefixed_msg(prefix, msg.data());
+    store_prefixed_msg(prefix, msg.data(), msg.size());
 }
 
-void Exception::store_prefixed_msg(Prefix prefix, const char *msg)
+void Exception::store_prefixed_msg(Prefix prefix, const char *msg, size_t n)
 {
     const char *parts[] = {prefix.value, msg};
-    size_t sizes[] = {std::strlen(prefix.value), std::strlen(msg)};
+    size_t sizes[] = {std::strlen(prefix.value), n};
 
     std::lock_guard<std::mutex> lock(buffer_mutex);
     message = buffer.write_as_c_str(parts, sizes, util::array_size(parts));

@@ -23,18 +23,17 @@ profile-level-id=64002A
 // a=control:streamid=1
 */
 
-Track::Track(in6_addr client_addr, std::string_view uri, std::string_view transport_header_value)
+Track::Track(sockaddr_in6 client_addr, std::string_view basename, std::string_view control_id,
+             std::string_view transport_header_value)
     : transport(client_addr, transport_header_value)
 {
-    std::string_view id = get_id_from_uri(uri);
-
-    auto media = Media::by_basename.find(id);
+    auto media = Media::by_basename.find(basename);
     if (media == Media::by_basename.end())
     {
-        throw Exception(Exception::Prefix{"Invalid track ID: "}, id);
+        throw Exception(Exception::Prefix{"Invalid presentation name: "}, basename);
     }
 
-    Stream::MediaType stream_type = media->second->stream_type_by_control_id[uri];
+    Stream::MediaType stream_type = media->second->stream_type_by_control_id[control_id];
 
     stream.load(media->second->file_name.c_str(), stream_type);
 
@@ -45,7 +44,7 @@ Track::Track(in6_addr client_addr, std::string_view uri, std::string_view transp
 
 std::string_view Track::get_id_from_uri(std::string_view uri)
 {
-    std::string_view key_str("streamid="); // TODO don't do this, use the whole control id
+    std::string_view key_str("a=control:");
 
     size_t i = uri.find(key_str);
     if (i == std::string::npos || i + key_str.size() == uri.size())

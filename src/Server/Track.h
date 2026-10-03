@@ -11,7 +11,8 @@ class Track
     static constexpr float frame_buffer_size_seconds = 10;
 
   public:
-    Track(in6_addr client_addr, std::string_view uri, std::string_view transport_header_value);
+    Track(sockaddr_in6 client_addr, std::string_view basename, std::string_view control_id,
+          std::string_view transport_header_value);
 
     RTPTransport transport;
 

@@ -44,5 +44,5 @@ class Exception : public std::exception
 
     const char *message = 0;
 
-    void store_prefixed_msg(Prefix prefix, const char *msg);
+    void store_prefixed_msg(Prefix prefix, const char *msg, size_t n);
 };

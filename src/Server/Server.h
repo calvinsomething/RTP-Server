@@ -54,7 +54,7 @@ class Server
 
       private:
         int fd = 0;
-        sockaddr_in6 socket_address{};
+        const sockaddr_in6 socket_address{};
 
         std::chrono::time_point<std::chrono::steady_clock> expires;
 

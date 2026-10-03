@@ -93,6 +93,7 @@ void Server::serve()
 
                 int connection =
                     accept(listener_socket, reinterpret_cast<sockaddr *>(&connection_addr), &conn_addr_size);
+
                 if (connection == -1)
                 {
                     int eno = errno;
@@ -205,7 +206,7 @@ void Server::interrupt()
 // Private
 RTSPResponse Server::dispatch(const RTSPRequest &request)
 {
-    std::string method = request.get_method();
+    std::string_view method = request.get_method();
 
     auto h = Dispatch::rtsp.find(method);
 
@@ -216,5 +217,9 @@ RTSPResponse Server::dispatch(const RTSPRequest &request)
             "Invalid method."); // TODO thrown Exceptions should be able to be used to write back error information
     }
 
-    return h->second(request);
+    RTSPResponse response = h->second(request);
+
+    response.marshal();
+
+    return response;
 }

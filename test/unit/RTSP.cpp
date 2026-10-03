@@ -12,7 +12,7 @@ TEST(RTSPRequestTest, ParseRequestLine)
 
     ASSERT_EQ(request.get_method(), "DESCRIBE");
 
-    ASSERT_EQ(request.get_uri(), "rtsp://192.168.1.100:8554/stream1");
+    ASSERT_EQ(request.get_url(), "rtsp://192.168.1.100:8554/sample");
 
     ASSERT_EQ(request.get_version(), "RTSP/1.0");
 }
@@ -42,7 +42,7 @@ TEST(RTSPRequestTest, RequestException)
 
 TEST(RTPTransportTest, RTPTransport)
 {
-    RTPTransport transport{in6_addr{}, "RTP/AVP;unicast;client_port=4588-4589"};
+    RTPTransport transport{sockaddr_in6{}, "RTP/AVP;unicast;client_port=4588-4589"};
 }
 
 TEST(CreateSDPTest, CreateSDP)

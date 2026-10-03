@@ -1,6 +1,5 @@
 #pragma once
 
-#include <string>
 #include <unordered_map>
 
 #include "RTSPRequest.h"
@@ -22,7 +21,7 @@ RTSPResponse handle_pause(const RTSPRequest &request);
 
 RTSPResponse handle_teardown(const RTSPRequest &request);
 
-static const std::unordered_map<std::string, RTSPHandler> rtsp{
+static const std::unordered_map<std::string_view, RTSPHandler> rtsp{
     {"DESCRIBE", handle_describe}, //
     {"SETUP", handle_setup},       //
     {"OPTIONS", handle_options},   //

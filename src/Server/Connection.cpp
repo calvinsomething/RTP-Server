@@ -40,13 +40,15 @@ Server::Connection::Connection(int fd, sockaddr_in6 socket_address) : fd(fd), so
 
     // TODO update expires every time something happens
     expires = std::chrono::steady_clock::now() + MIN_CONNECTION_LIFETIME;
-    request.client_addr = socket_address.sin6_addr;
+    request.client_addr = socket_address;
 }
 
 Server::Connection::Connection(Connection &&other)
 {
     fd = other.fd;
     message_buffer = std::move(other.message_buffer);
+    request = std::move(other.request);
+    *const_cast<sockaddr_in6 *>(&socket_address) = other.socket_address;
 
     other.fd = 0;
 }
@@ -79,7 +81,7 @@ void Server::Connection::clear_message()
 {
     message_buffer.clear();
     request = {};
-    request.client_addr = socket_address.sin6_addr;
+    request.client_addr = socket_address;
 }
 
 void Server::Connection::append_to_message(const char *b, size_t n)

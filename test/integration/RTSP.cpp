@@ -87,13 +87,13 @@ TEST_F(RTSPTest, PlayRequest)
 
     size_t session_index = response.find("Session: ");
 
-    EXPECT_NE(session_index, std::string::npos);
+    ASSERT_NE(session_index, std::string::npos);
 
     session_index += sizeof("Session: ") - 1;
 
     size_t session_end = response.find('\n', session_index);
 
-    EXPECT_NE(session_end, std::string::npos);
+    ASSERT_NE(session_end, std::string::npos);
 
     size_t session_id_len = session_end - session_index;
 
@@ -103,7 +103,6 @@ TEST_F(RTSPTest, PlayRequest)
         sizeof(play_test_message_fmt) - 2 + session_id_len; // size of test message fmt + session ID
 
     char *play_message = reinterpret_cast<char *>(alloca(play_message_size));
-
     memset(play_message, 0, play_message_size);
 
     std::sprintf(play_message, play_test_message_fmt, session_id.c_str());
@@ -128,13 +127,13 @@ TEST_F(RTSPTest, PauseRequest)
 
     size_t session_index = response.find("Session: ");
 
-    EXPECT_NE(session_index, std::string::npos);
+    ASSERT_NE(session_index, std::string::npos);
 
     session_index += sizeof("Session: ") - 1;
 
     size_t session_end = response.find('\n', session_index);
 
-    EXPECT_NE(session_end, std::string::npos);
+    ASSERT_NE(session_end, std::string::npos);
 
     size_t session_id_len = session_end - session_index;
 

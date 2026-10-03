@@ -60,7 +60,8 @@ class Session
 
     std::string get_id();
 
-    Track &emplace_track(in6_addr client_address, const std::string &uri, std::string_view transport_value);
+    Track &emplace_track(sockaddr_in6 client_addr, std::string_view basename, std::string_view control_id,
+                         std::string_view transport_value);
 
   private:
     static std::atomic<bool> is_live;

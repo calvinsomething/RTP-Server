@@ -16,14 +16,14 @@ class RTSPRequest
 
     bool ready() const;
 
-    std::string get_method() const;
-    std::string get_uri() const;
-    std::string get_version() const;
+    std::string_view get_method() const;
+    std::string_view get_url() const;
+    std::string_view get_version() const;
+    std::string_view get_body() const;
+
     std::string get_header(std::string key) const;
 
-    const std::string &get_body() const;
-
-    in6_addr client_addr = {};
+    sockaddr_in6 client_addr = {};
 
   private:
     static constexpr size_t PARSE_COMPLETE = -1;
@@ -31,7 +31,7 @@ class RTSPRequest
     static const std::string delimiters[3];
     static const std::set<std::string> unique_headers;
 
-    std::string method, uri, version, body;
+    std::string method, url, version, body;
     std::unordered_map<std::string, std::string> headers;
 
     void set_request_line_parts(std::string_view line);

@@ -5,7 +5,6 @@
 #include <system_error>
 #include <vector>
 
-#include "../util/misc.h"
 #include "Exception.h"
 
 // Method         =         "DESCRIBE"              ; Section 10.2
@@ -160,7 +159,7 @@ void RTSPRequest::add_header(std::string_view line)
 // (Request-URI = "*" | absolute_URI)
 void RTSPRequest::set_request_line_parts(std::string_view line)
 {
-    std::string *parts[3] = {&method, &uri, &version};
+    std::string *parts[3] = {&method, &url, &version};
 
     size_t i = 0, j = 0;
     for (auto p : parts)
@@ -181,22 +180,22 @@ void RTSPRequest::set_request_line_parts(std::string_view line)
     }
 }
 
-std::string RTSPRequest::get_method() const
+std::string_view RTSPRequest::get_method() const
 {
     return method;
 }
 
-std::string RTSPRequest::get_uri() const
+std::string_view RTSPRequest::get_url() const
 {
-    return uri;
+    return url;
 }
 
-std::string RTSPRequest::get_version() const
+std::string_view RTSPRequest::get_version() const
 {
     return version;
 }
 
-const std::string &RTSPRequest::get_body() const
+std::string_view RTSPRequest::get_body() const
 {
     return body;
 }

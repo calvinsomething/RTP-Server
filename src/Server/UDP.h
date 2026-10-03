@@ -19,7 +19,7 @@ class Socket
     bool bind();
     bool bind(uint16_t port);
 
-    void connect(in6_addr client_addr);
+    void connect(sockaddr_in6 client_addr);
     void send(uint8_t *data, size_t size);
 
     uint16_t get_port();

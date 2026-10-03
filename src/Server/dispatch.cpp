@@ -60,30 +60,36 @@
 //  Via                  g      opt.      all
 //  WWW-Authenticate     r      opt.      all
 
+std::string_view get_endpoint_from_url(std::string_view url)
+{
+    size_t endpoint_index = util::find_nth_of(url, '/', 3);
+
+    if (endpoint_index != std::string::npos && endpoint_index < url.size() - 1)
+    {
+        return std::string_view(url.begin() + endpoint_index + 1, url.end());
+    }
+
+    return "";
+}
+
 namespace Dispatch
 {
 RTSPResponse handle_describe(const RTSPRequest &request)
 {
-    // If URI does not point to presentation group, return 404
-
     RTSPResponse response;
 
-    std::string uri = request.get_uri();
+    std::string_view endpoint = get_endpoint_from_url(request.get_url());
 
-    size_t endpoint_index = util::find_nth_of(uri, '/', 3), basename_index = endpoint_index + 1;
-
-    if (endpoint_index != std::string::npos && uri.size() > basename_index)
+    if (!endpoint.empty())
     {
-        if (request.get_header("accept").find("application/sdp") == std::string::npos)
-        {
-            response.set_status(RTSPResponse::StatusCode::NotAcceptable);
-
-            goto RESPOND;
-        }
-
-        auto media = Media::by_basename.find(uri.substr(basename_index));
+        auto media = Media::by_basename.find(endpoint);
         if (media != Media::by_basename.end())
         {
+            if (request.get_header("accept").find("application/sdp") == std::string::npos)
+            {
+                response.set_status(RTSPResponse::StatusCode::NotAcceptable);
+            }
+
             response.body = media->second->sdp;
 
             response.set_header("CSeq", request.get_header("cseq"));
@@ -95,65 +101,76 @@ RTSPResponse handle_describe(const RTSPRequest &request)
             response.set_header("Content-Length", util::int_to_string(response.body.size()));
 
             response.set_status(RTSPResponse::StatusCode::OK);
-
-            goto RESPOND;
+        }
+        else
+        {
+            response.set_status(RTSPResponse::StatusCode::NotFound);
         }
     }
-
-    response.set_status(RTSPResponse::StatusCode::NotFound);
-
-RESPOND:
-    response.marshal();
+    else
+    {
+        response.set_status(RTSPResponse::StatusCode::NotFound);
+    }
 
     return response;
 }
 
 RTSPResponse handle_setup(const RTSPRequest &request)
 {
-    std::string session_id = request.get_header("session");
-
-    std::shared_ptr<Session> session = session_id.empty() ? Session::get() : Session::get(session_id);
-
-    Track *track = 0;
-    std::optional<Exception> first_exception;
-
-    std::string transport_string = request.get_header("transport");
-
-    // Try all transport header values before throwing exception
-    for (std::string_view transport_value : util::split(transport_string, ','))
-    {
-        try
-        {
-            track = &session->emplace_track(request.client_addr, request.get_uri(), transport_value);
-            break;
-        }
-        catch (Exception &e)
-        {
-            if (!first_exception.has_value())
-            {
-                first_exception.emplace(e);
-            }
-        }
-    }
-
-    if (!track)
-    {
-        throw first_exception.value();
-    }
-
     RTSPResponse response;
 
-    response.set_header("CSeq", request.get_header("cseq"));
+    auto url_parts = util::split(get_endpoint_from_url(request.get_url()), '/');
+    if (url_parts.size() == 2)
+    {
+        std::string session_id = request.get_header("session");
 
-    response.set_header("Date", util::get_date_string(std::chrono::system_clock::now()));
+        std::shared_ptr<Session> session = session_id.empty() ? Session::get() : Session::get(session_id);
 
-    response.set_header("Session", session->get_id());
+        Track *track = 0;
+        std::optional<Exception> first_exception;
 
-    response.set_header("Transport", track->transport.get_string());
+        std::string transport_string = request.get_header("transport");
 
-    response.set_status(RTSPResponse::StatusCode::OK);
+        // Try all transport header values before throwing exception
+        for (std::string_view transport_value : util::split(transport_string, ','))
+        {
+            try
+            {
+                track = &session->emplace_track(request.client_addr, url_parts[0], url_parts[1], transport_value);
+                break;
+            }
+            catch (Exception &e)
+            {
+                if (!first_exception.has_value())
+                {
+                    first_exception.emplace(e);
+                }
+            }
+        }
 
-    response.marshal();
+        if (!track)
+        {
+            throw first_exception.value();
+        }
+
+        response.set_header("CSeq", request.get_header("cseq"));
+
+        response.set_header("Date", util::get_date_string(std::chrono::system_clock::now()));
+
+        response.set_header("Session", session->get_id());
+
+        response.set_header("Transport", track->transport.get_string());
+
+        response.set_status(RTSPResponse::StatusCode::OK);
+    }
+    else if (url_parts.size() == 1)
+    {
+        response.set_status(RTSPResponse::StatusCode::AggregateOperationNotAllowed);
+    }
+    else
+    {
+        response.set_status(RTSPResponse::StatusCode::NotFound);
+    }
 
     return response;
 }
@@ -166,8 +183,6 @@ RTSPResponse handle_options(const RTSPRequest &request)
     response.set_header("Public", "DESCRIBE, SETUP, TEARDOWN, PLAY, PAUSE");
 
     response.set_status(RTSPResponse::StatusCode::OK);
-
-    response.marshal();
 
     return response;
 }
@@ -206,8 +221,6 @@ RTSPResponse handle_play(const RTSPRequest &request)
 
     response.set_status(RTSPResponse::StatusCode::OK);
 
-    response.marshal();
-
     return response;
 }
 
@@ -230,8 +243,6 @@ RTSPResponse handle_pause(const RTSPRequest &request)
     response.set_header("Date", util::get_date_string(std::chrono::system_clock::now()));
 
     response.set_status(RTSPResponse::StatusCode::OK);
-
-    response.marshal();
 
     return response;
 }

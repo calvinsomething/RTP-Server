@@ -76,32 +76,43 @@ void Session::Group::watch_streams()
 
     while (is_live.load())
     {
-        for (auto it = sessions.begin(); it != sessions.end(); ++it)
+        try
         {
-            if ((*it)->is_active.load())
+            for (auto it = sessions.begin(); it != sessions.end(); ++it)
             {
-                (*it)->tick();
+                if ((*it)->is_active.load())
+                {
+                    (*it)->tick();
+                }
+                else if (it->use_count() == 1) // use_count is not thread safe; however, if we do not make shared_ptr
+                                               // copies after Session::is_active is false, this should be okay
+                {
+                    to_remove.push(it);
+                }
             }
-            else if ((*it).use_count() == 1) // use_count is not thread safe; however, if we do not make shared_ptr
-                                             // copies after Session::is_active is false, this should be okay
-            {
-                to_remove.push(it);
-            }
-        }
 
-        while (!to_remove.empty())
+            while (!to_remove.empty())
+            {
+                sessions.erase(to_remove.front());
+                to_remove.pop();
+            }
+
+            newly_added.use([&](decltype(newly_added)::type &v) {
+                while (!v.empty())
+                {
+                    sessions.push_back(v.front());
+                    v.pop();
+                }
+            });
+        }
+        catch (std::exception &e)
         {
-            sessions.erase(to_remove.front());
-            to_remove.pop();
+            std::osyncstream(std::cout) << e.what() << std::endl;
         }
-
-        newly_added.use([&](decltype(newly_added)::type &v) {
-            while (!v.empty())
-            {
-                sessions.push_back(v.front());
-                v.pop();
-            }
-        });
+        catch (...)
+        {
+            std::osyncstream(std::cout) << "Unknown exception.\n";
+        }
     }
 }
 
@@ -174,9 +185,10 @@ std::string Session::get_id()
     return id;
 }
 
-Track &Session::emplace_track(in6_addr client_address, const std::string &uri, std::string_view transport_value)
+Track &Session::emplace_track(sockaddr_in6 client_addr, std::string_view basename, std::string_view control_id,
+                              std::string_view transport_value)
 {
-    return tracks.emplace_back(client_address, uri, transport_value);
+    return tracks.emplace_back(client_addr, basename, control_id, transport_value);
 }
 
 std::pair<float, float> Session::play()

@@ -15,7 +15,7 @@
 // The syntax for the transport specifier is:
 //		transport/profile/lower-transport
 
-RTPTransport::RTPTransport(in6_addr client_addr, std::string_view request_header_value)
+RTPTransport::RTPTransport(sockaddr_in6 client_addr, std::string_view request_header_value)
 {
     size_t i = request_header_value.find(';');
     if (i == std::string::npos)
@@ -45,7 +45,11 @@ RTPTransport::RTPTransport(in6_addr client_addr, std::string_view request_header
         throw Exception("Invalid transport profile.");
     }
 
-    if (!lower_transport.empty() && lower_transport != "udp")
+    if (lower_transport.empty())
+    {
+        lower_transport = "udp";
+    }
+    else if (lower_transport != "udp")
     {
         throw Exception("Invalid lower-transport.");
     }

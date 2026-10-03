@@ -9,7 +9,7 @@
 class RTPTransport
 {
   public:
-    RTPTransport(in6_addr client_addr, std::string_view request_header_value);
+    RTPTransport(sockaddr_in6 client_addr, std::string_view request_header_value);
 
     std::string get_string();
 
